@@ -41,3 +41,6 @@ dist-ssr/
 *.tmp
 *.temp
 *~
+
+# Dev scripts
+dev-build.sh

@@ -81,7 +81,7 @@
             on:click={() => handleFavoriteClick(fav)}
             on:contextmenu={(e) => handleRightClick(e, fav)}
           >
-            <span class="item-icon">★</span>
+            <span class="item-icon icon-star"></span>
             <span class="item-name">{getDisplayName(fav)}</span>
           </button>
         {/each}
@@ -105,7 +105,7 @@
             on:contextmenu={(e) => handleRightClick(e, mount.path)}
             title={mount.device}
           >
-            <span class="item-icon">◊</span>
+            <span class="item-icon icon-device"></span>
             <span class="item-name">{mount.name}</span>
           </button>
         {/each}
@@ -220,6 +220,19 @@
     font-size: 12px;
     color: var(--zinc-muted);
     flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon-star::before {
+    content: '★';
+  }
+
+  .icon-device::before {
+    content: '◊';
   }
 
   .item-name {

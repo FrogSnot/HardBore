@@ -38,40 +38,40 @@ export function formatDate(timestamp: number): string {
 
 export function getFileIcon(entry: { is_dir: boolean; is_symlink: boolean; extension: string | null; name: string }): string {
   if (entry.is_dir) {
-    return entry.is_symlink ? '↗' : '▸';
+    return entry.is_symlink ? '\u2197' : '\u25b8';
   }
   
   const ext = entry.extension?.toLowerCase();
   
   if (['rs', 'py', 'js', 'ts', 'jsx', 'tsx', 'svelte', 'vue', 'go', 'c', 'cpp', 'h', 'java', 'kt', 'swift', 'rb', 'php'].includes(ext ?? '')) {
-    return '◇';
+    return '\u25c7';
   }
   
   if (['json', 'yaml', 'yml', 'toml', 'xml', 'ini', 'conf'].includes(ext ?? '')) {
-    return '◆';
+    return '\u25c6';
   }
   
   if (['md', 'txt', 'doc', 'docx', 'pdf'].includes(ext ?? '')) {
-    return '▫';
+    return '\u25ab';
   }
   
   if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp'].includes(ext ?? '')) {
-    return '▪';
+    return '\u25aa';
   }
   
   if (['exe', 'bin', 'so', 'dylib', 'dll', 'o', 'a'].includes(ext ?? '')) {
-    return '●';
+    return '\u25cf';
   }
   
   if (['zip', 'tar', 'gz', 'bz2', 'xz', '7z', 'rar'].includes(ext ?? '')) {
-    return '◈';
+    return '\u25c8';
   }
   
   if (entry.is_symlink) {
-    return '↗';
+    return '\u2197';
   }
   
-  return '○';
+  return '\u25cb';
 }
 
 export function getLanguage(extension: string | null): string {
@@ -159,7 +159,7 @@ export function isModifierOnly(e: KeyboardEvent): boolean {
 export function getKeyString(e: KeyboardEvent): string {
   const parts: string[] = [];
   
-  if (e.metaKey) parts.push('⌘');
+  if (e.metaKey) parts.push('\u2318');
   if (e.ctrlKey) parts.push('Ctrl');
   if (e.altKey) parts.push('Alt');
   if (e.shiftKey) parts.push('Shift');

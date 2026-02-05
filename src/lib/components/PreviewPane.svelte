@@ -32,8 +32,7 @@
       <span class="preview-title truncate mono">
         {preview ? preview.path.split('/').pop() : 'No file selected'}
       </span>
-      <button class="close-btn" onclick={togglePreview} title="Close preview (p)" type="button">
-        ✕
+      <button class="close-btn icon-close" onclick={togglePreview} title="Close preview (p)" type="button" aria-label="Close preview">
       </button>
     </div>
 
@@ -73,7 +72,7 @@
           <div class="preview-media">
             {#if imageError}
               <div class="media-error">
-                <span class="error-icon">⚠</span>
+                <span class="error-icon icon-warning"></span>
                 <span class="text-dim">Unable to load image</span>
               </div>
             {:else}
@@ -149,6 +148,16 @@
   .close-btn:hover {
     background: var(--zinc-surface);
     color: var(--text-primary);
+  }
+
+  .icon-close::before {
+    content: '×';
+  }
+
+  .icon-warning::before {
+    content: '!';
+    font-weight: bold;
+    font-style: normal;
   }
 
   .preview-content {

@@ -57,7 +57,7 @@
   <div class="palette-overlay" onclick={handleBackdropClick}>
     <div class="palette-container">
       <div class="palette-input-wrapper">
-        <span class="palette-icon">-></span>
+        <span class="palette-icon icon-search"></span>
         <input
           bind:this={inputEl}
           class="palette-input mono"
@@ -86,7 +86,7 @@
             >
               <div class="result-content">
                 <div class="result-header">
-                  <span class="result-icon mono">{result.is_dir ? '▸' : '○'}</span>
+                  <span class="result-icon" class:is-dir={result.is_dir}></span>
                   <span class="result-name">{result.name}</span>
                   {#if result.hidden}
                     <span class="result-badge hidden-badge">hidden</span>
@@ -149,6 +149,15 @@
   .palette-icon {
     color: var(--text-dim);
     font-size: 14px;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon-search::before {
+    content: '⌕';
   }
 
   .palette-input {
@@ -213,6 +222,19 @@
   .result-icon {
     font-size: 11px;
     color: var(--text-muted);
+    width: 12px;
+    height: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .result-icon::before {
+    content: '○';
+  }
+
+  .result-icon.is-dir::before {
+    content: '▸';
   }
 
   .result-name {

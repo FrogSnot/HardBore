@@ -50,7 +50,7 @@
         >
           {opt.label}
           {#if sortField === opt.field}
-            <span class="sort-indicator">{sortDir === 'asc' ? '↑' : '↓'}</span>
+            <span class="sort-indicator" class:asc={sortDir === 'asc'}></span>
           {/if}
         </button>
       {/each}
@@ -63,7 +63,7 @@
       title="Toggle hidden files (Ctrl+H)"
       type="button"
     >
-      {showHidden ? '●' : '○'} Hidden
+      <span class="hidden-icon" class:active={showHidden}></span> Hidden
     </button>
   </div>
 </footer>
@@ -146,6 +146,30 @@
 
   .sort-indicator {
     font-size: 10px;
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    position: relative;
+  }
+
+  .sort-indicator::before {
+    content: '↓';
+  }
+
+  .sort-indicator.asc::before {
+    content: '↑';
+  }
+
+  .hidden-icon {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+  }
+
+  .hidden-icon.active {
+    background: currentColor;
   }
 
   .hidden-toggle {

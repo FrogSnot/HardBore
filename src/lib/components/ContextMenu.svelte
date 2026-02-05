@@ -251,26 +251,26 @@
   }
 
   $: menuItems = entry ? [
-    { label: 'Open', icon: '↵', action: openItem, disabled: false },
+    { label: 'Open', icon: 'icon-enter', action: openItem, disabled: false },
     { label: '', icon: '', action: () => {}, separator: true },
-    { label: 'Cut', icon: '✂', action: cutFilesToClipboard, disabled: false },
-    { label: 'Copy', icon: '⎘', action: copyFilesToClipboard, disabled: false },
-    { label: 'Paste', icon: '⎗', action: pasteFiles, disabled: !$clipboard },
+    { label: 'Cut', icon: 'icon-scissors', action: cutFilesToClipboard, disabled: false },
+    { label: 'Copy', icon: 'icon-copy', action: copyFilesToClipboard, disabled: false },
+    { label: 'Paste', icon: 'icon-paste', action: pasteFiles, disabled: !$clipboard },
     { label: '', icon: '', action: () => {}, separator: true },
     ...(entry.is_dir ? [
-      { label: 'Index Directory', icon: '⚡', action: indexDirectory, disabled: false },
+      { label: 'Index Directory', icon: 'icon-lightning', action: indexDirectory, disabled: false },
       { label: '', icon: '', action: () => {}, separator: true },
     ] : []),
-    { label: 'Copy Path', icon: '⎘', action: copyPath, disabled: false },
-    { label: 'Copy Name', icon: '⎘', action: copyName, disabled: false },
+    { label: 'Copy Path', icon: 'icon-copy', action: copyPath, disabled: false },
+    { label: 'Copy Name', icon: 'icon-copy', action: copyName, disabled: false },
     { label: '', icon: '', action: () => {}, separator: true },
-    { label: 'Rename', icon: '✎', action: startRename, disabled: false },
-    { label: 'Delete', icon: '×', action: deleteItem, disabled: false, danger: true },
+    { label: 'Rename', icon: 'icon-edit', action: startRename, disabled: false },
+    { label: 'Delete', icon: 'icon-trash', action: deleteItem, disabled: false, danger: true },
     { label: '', icon: '', action: () => {}, separator: true },
-    { label: 'Show in Folder', icon: '⌂', action: showInFolder, disabled: false },
-    { label: 'Open Terminal Here', icon: '▸', action: openTerminal, disabled: false },
+    { label: 'Show in Folder', icon: 'icon-folder', action: showInFolder, disabled: false },
+    { label: 'Open Terminal Here', icon: 'icon-terminal', action: openTerminal, disabled: false },
     { label: '', icon: '', action: () => {}, separator: true },
-    { label: 'Properties', icon: 'ⓘ', action: showProperties, disabled: false },
+    { label: 'Properties', icon: 'icon-info', action: showProperties, disabled: false },
   ] as MenuItem[] : [];
 
   $: if (visible && menuElement) {
@@ -282,11 +282,11 @@
     const viewportHeight = window.innerHeight;
     
     if (menuX + rect.width > viewportWidth) {
-      menuX = viewportWidth - rect.width - 8;
+      menuX = viewportWidth - rect.width - 15;
     }
     
     if (menuY + rect.height > viewportHeight) {
-      menuY = viewportHeight - rect.height - 8;
+      menuY = viewportHeight - rect.height - 15;
     }
   }
 
@@ -315,7 +315,7 @@
       <!-- svelte-ignore a11y_click_events_have_key_keys -->
       <div class="delete-dialog" onclick={(e) => e.stopPropagation()}>
         <div class="delete-header">
-          <span class="delete-icon">×</span>
+          <span class="delete-icon icon-trash"></span>
           <span class="delete-title">Delete {entry.is_dir ? 'Directory' : 'File'}</span>
         </div>
         <div class="delete-content">
@@ -354,9 +354,9 @@
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <div class="properties-dialog" onclick={(e) => e.stopPropagation()}>
         <div class="properties-header">
-          <span class="properties-icon mono">{properties.is_dir ? '▸' : '○'}</span>
+          <span class="properties-icon" class:is-dir={properties.is_dir}></span>
           <span class="properties-title truncate">{properties.name}</span>
-          <button class="close-btn" onclick={closeProperties} type="button">✕</button>
+          <button class="close-btn icon-close" onclick={closeProperties} type="button" aria-label="Close"></button>
         </div>
         <div class="properties-content">
           <div class="prop-row">
@@ -401,7 +401,7 @@
       aria-label="Context menu"
     >
       <div class="context-header">
-        <span class="context-icon mono">{entry.is_dir ? '▸' : '○'}</span>
+        <span class="context-icon" class:is-dir={entry.is_dir}></span>
         <span class="context-title truncate">{entry.name}</span>
       </div>
       
@@ -418,7 +418,7 @@
             type="button"
             role="menuitem"
           >
-            <span class="menu-icon">{item.icon}</span>
+            <span class="menu-icon {item.icon}"></span>
             <span class="menu-label">{item.label}</span>
           </button>
         {/if}
@@ -466,6 +466,19 @@
   .context-icon {
     font-size: 10px;
     color: var(--text-muted);
+    width: 12px;
+    height: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .context-icon::before {
+    content: '○';
+  }
+
+  .context-icon.is-dir::before {
+    content: '▸';
   }
 
   .context-title {
@@ -510,10 +523,23 @@
 
   .menu-icon {
     width: 16px;
-    font-size: 12px;
+    height: 16px;
+    display: inline-block;
     color: var(--text-muted);
     text-align: center;
+    position: relative;
   }
+
+  .icon-enter::before { content: '↵'; }
+  .icon-scissors::before { content: '✂'; }
+  .icon-copy::before { content: '□'; }
+  .icon-paste::before { content: '▣'; }
+  .icon-lightning::before { content: '⚡'; }
+  .icon-edit::before { content: '✎'; }
+  .icon-trash::before { content: '×'; color: var(--safety-orange); font-weight: bold; }
+  .icon-folder::before { content: '▤'; }
+  .icon-terminal::before { content: '›'; }
+  .icon-info::before { content: 'i'; font-style: italic; font-weight: bold; }
 
   .menu-label {
     flex: 1;
@@ -645,6 +671,19 @@
   .properties-icon {
     font-size: 12px;
     color: var(--text-muted);
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .properties-icon::before {
+    content: '○';
+  }
+
+  .properties-icon.is-dir::before {
+    content: '▸';
   }
 
   .properties-title {
@@ -671,6 +710,10 @@
   .close-btn:hover {
     background: var(--zinc-surface);
     color: var(--text-primary);
+  }
+
+  .icon-close::before {
+    content: '✕';
   }
 
   .properties-content {
@@ -736,7 +779,11 @@
   .delete-icon {
     font-size: 18px;
     color: var(--safety-orange);
-    font-weight: 300;
+    font-weight: bold;
+  }
+
+  .delete-icon::before {
+    content: '⌫';
   }
 
   .delete-title {

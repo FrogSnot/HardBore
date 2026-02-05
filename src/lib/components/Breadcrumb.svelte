@@ -64,28 +64,25 @@
 <div class="breadcrumb-bar">
   <div class="nav-buttons">
     <button 
-      class="nav-btn" 
+      class="nav-btn icon-arrow-left" 
       onclick={navigateBack}
       disabled={!canGoBack}
       title="Back (Alt+←)"
     >
-      ←
     </button>
     <button 
-      class="nav-btn" 
+      class="nav-btn icon-arrow-right" 
       onclick={navigateForward}
       disabled={!canGoForward}
       title="Forward (Alt+→)"
     >
-      →
     </button>
     <button 
-      class="nav-btn" 
+      class="nav-btn icon-arrow-up" 
       onclick={navigateUp}
       disabled={!$parentPath}
       title="Up (Backspace)"
     >
-      ↑
     </button>
   </div>
 
@@ -188,6 +185,18 @@
   .nav-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
+  }
+
+  .icon-arrow-left::before {
+    content: '←';
+  }
+
+  .icon-arrow-right::before {
+    content: '→';
+  }
+
+  .icon-arrow-up::before {
+    content: '↑';
   }
 
   .path-display {
