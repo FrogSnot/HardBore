@@ -1,0 +1,226 @@
+/* HARDBORE - Mineral Brutalism Design System */
+/* "A cold, matte-black hardware terminal carved from a single block of slate" */
+
+:root {
+  /* Obsidian Stack Palette */
+  --basalt: #121212;
+  --basalt-deep: #0a0a0a;
+  --zinc-matte: #1c1c1e;
+  --zinc-surface: #252528;
+  --zinc-border: #2a2a2d;
+  
+  /* Typography */
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --text-dim: #52525b;
+  
+  /* Accents */
+  --safety-orange: #ff5722;
+  --safety-orange-dim: #bf4019;
+  --success-green: #22c55e;
+  --warning-amber: #f59e0b;
+  
+  /* Selection */
+  --selection-bg: #27272a;
+  --selection-border: #3f3f46;
+  --focus-ring: #52525b;
+  
+  /* Typography Stack */
+  --font-interface: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  
+  /* Carved Shadows (Inset) */
+  --shadow-inset-sm: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-inset-md: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  --shadow-inset-lg: inset 0 4px 8px rgba(0, 0, 0, 0.6);
+  
+  /* Border radius - minimal, machined edges */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+}
+
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  zoom: 1.1;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-interface);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--basalt);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+/* Noise Texture Overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+/* Scrollbar - Machined Channel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--basalt-deep);
+  box-shadow: var(--shadow-inset-sm);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--zinc-border);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--zinc-surface);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--basalt-deep);
+}
+
+/* Selection */
+::selection {
+  background: var(--selection-bg);
+  color: var(--text-primary);
+}
+
+/* Focus States */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 1px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Carved Input Style */
+.carved-input {
+  background: var(--basalt-deep);
+  border: 1px solid var(--zinc-border);
+  box-shadow: var(--shadow-inset-md);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  transition: border-color 0.1s;
+}
+
+.carved-input:focus {
+  border-color: var(--text-muted);
+}
+
+.carved-input::placeholder {
+  color: var(--text-dim);
+}
+
+/* Carved Button Style */
+.carved-button {
+  background: var(--zinc-matte);
+  border: 1px solid var(--zinc-border);
+  box-shadow: var(--shadow-inset-sm);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-interface);
+  font-size: 12px;
+  font-weight: 500;
+  padding: var(--spacing-xs) var(--spacing-md);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.carved-button:hover {
+  background: var(--zinc-surface);
+  color: var(--text-primary);
+}
+
+.carved-button:active {
+  box-shadow: var(--shadow-inset-md);
+}
+
+.carved-button.destructive {
+  color: var(--safety-orange);
+}
+
+.carved-button.destructive:hover {
+  background: rgba(255, 87, 34, 0.1);
+}
+
+/* Monospace Data */
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Text Utilities */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+
+/* Truncate */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Keyboard shortcut badge */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--basalt-deep);
+  border: 1px solid var(--zinc-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-inset-sm);
+}

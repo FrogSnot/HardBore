@@ -1,0 +1,27 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [{ "path": "**" }]
+    },
+    "fs:allow-exists",
+    "fs:allow-stat",
+    {
+      "identifier": "core:app:allow-app-hide",
+      "allow": []
+    }
+  ],
+  "remote": {
+    "urls": []
+  }
+}
