@@ -146,7 +146,7 @@ impl FileChooserPortal {
 
         let filters: Vec<FileFilter> = options
             .get("filters")
-            .and_then(|v| {
+            .and_then(|_v| {
 
                 Some(vec![])
             })

@@ -64,6 +64,13 @@ fn get_home() -> Option<String> {
 }
 
 #[tauri::command]
+fn get_current_dir() -> Option<String> {
+    std::env::current_dir()
+        .ok()
+        .map(|p| p.to_string_lossy().to_string())
+}
+
+#[tauri::command]
 fn start_indexing(path: String, max_depth: Option<usize>, state: State<AppState>) -> Result<(), String> {
     let indexer = state.indexer.lock().unwrap();
     if let Some(ref idx) = *indexer {
@@ -119,6 +126,139 @@ fn delete_path(path: String, is_dir: bool) -> Result<(), String> {
     } else {
         std::fs::remove_file(&path)
             .map_err(|e| format!("Failed to delete file: {}", e))
+    }
+}
+
+#[tauri::command]
+fn copy_path(source: String, destination: String) -> Result<(), String> {
+    use std::fs;
+    use std::path::Path;
+    
+    let src = Path::new(&source);
+    let dst = Path::new(&destination);
+    
+    if !src.exists() {
+        return Err("Source does not exist".to_string());
+    }
+    
+    if src.is_dir() {
+        copy_dir_recursive(src, dst)
+    } else {
+        fs::copy(src, dst)
+            .map(|_| ())
+            .map_err(|e| format!("Failed to copy file: {}", e))
+    }
+}
+
+fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
+    use std::fs;
+    
+    if !dst.exists() {
+        fs::create_dir_all(dst)
+            .map_err(|e| format!("Failed to create directory: {}", e))?;
+    }
+    
+    for entry in fs::read_dir(src)
+        .map_err(|e| format!("Failed to read directory: {}", e))? 
+    {
+        let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
+        let src_path = entry.path();
+        let dst_path = dst.join(entry.file_name());
+        
+        if src_path.is_dir() {
+            copy_dir_recursive(&src_path, &dst_path)?;
+        } else {
+            fs::copy(&src_path, &dst_path)
+                .map_err(|e| format!("Failed to copy file: {}", e))?;
+        }
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+fn move_path(source: String, destination: String) -> Result<(), String> {
+    use std::fs;
+    use std::path::Path;
+    
+    let src = Path::new(&source);
+    let dst = Path::new(&destination);
+    
+    if !src.exists() {
+        return Err("Source does not exist".to_string());
+    }
+    
+    if let Err(_) = fs::rename(src, dst) {
+        if src.is_dir() {
+            copy_dir_recursive(src, dst)?;
+            fs::remove_dir_all(src)
+                .map_err(|e| format!("Failed to remove source directory: {}", e))?;
+        } else {
+            fs::copy(src, dst)
+                .map_err(|e| format!("Failed to copy file: {}", e))?;
+            fs::remove_file(src)
+                .map_err(|e| format!("Failed to remove source file: {}", e))?;
+        }
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+fn batch_copy_paths(sources: Vec<String>, destination_dir: String) -> Result<Vec<String>, String> {
+    use std::path::Path;
+    
+    let dest_dir = Path::new(&destination_dir);
+    if !dest_dir.is_dir() {
+        return Err("Destination must be a directory".to_string());
+    }
+    
+    let mut errors = Vec::new();
+    
+    for source in sources {
+        let src_path = Path::new(&source);
+        let file_name = src_path.file_name()
+            .ok_or_else(|| format!("Invalid source path: {}", source))?;
+        let dest_path = dest_dir.join(file_name);
+        
+        if let Err(e) = copy_path(source.clone(), dest_path.to_string_lossy().to_string()) {
+            errors.push(format!("{}: {}", source, e));
+        }
+    }
+    
+    if errors.is_empty() {
+        Ok(vec![])
+    } else {
+        Err(errors.join("\n"))
+    }
+}
+
+#[tauri::command]
+fn batch_move_paths(sources: Vec<String>, destination_dir: String) -> Result<Vec<String>, String> {
+    use std::path::Path;
+    
+    let dest_dir = Path::new(&destination_dir);
+    if !dest_dir.is_dir() {
+        return Err("Destination must be a directory".to_string());
+    }
+    
+    let mut errors = Vec::new();
+    
+    for source in sources {
+        let src_path = Path::new(&source);
+        let file_name = src_path.file_name()
+            .ok_or_else(|| format!("Invalid source path: {}", source))?;
+        let dest_path = dest_dir.join(file_name);
+        
+        if let Err(e) = move_path(source.clone(), dest_path.to_string_lossy().to_string()) {
+            errors.push(format!("{}: {}", source, e));
+        }
+    }
+    
+    if errors.is_empty() {
+        Ok(vec![])
+    } else {
+        Err(errors.join("\n"))
     }
 }
 
@@ -538,12 +678,17 @@ pub fn run() {
             read_dir,
             preview_file,
             get_home,
+            get_current_dir,
             start_indexing,
             search_files,
             get_indexer_status,
             get_indexed_count,
             clear_index,
             delete_path,
+            copy_path,
+            move_path,
+            batch_copy_paths,
+            batch_move_paths,
             rename_path,
             open_path,
             show_in_folder,

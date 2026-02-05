@@ -30,6 +30,12 @@ export const pickerConfig = writable<PickerConfig | null>(null);
 export const pickerSelection = writable<Set<string>>(new Set());
 export const isPickerMode = derived(pickerConfig, $config => $config?.mode !== 'Disabled');
 
+export interface ClipboardItem {
+  paths: string[];
+  operation: 'copy' | 'cut';
+}
+export const clipboard = writable<ClipboardItem | null>(null);
+
 function loadViewConfig(): ViewConfig {
   if (typeof window !== 'undefined') {
     try {
@@ -347,9 +353,11 @@ export async function initializeApp(): Promise<void> {
     await loadFavorites();
     await loadMountPoints();
     
-    const home = await invoke<string | null>('get_home');
-    if (home) {
-      await navigateTo(home);
+    const cwd = await invoke<string | null>('get_current_dir');
+    const startPath = cwd || await invoke<string | null>('get_home');
+    
+    if (startPath) {
+      await navigateTo(startPath);
       
       const indexedCount = await invoke<number>('get_indexed_count');
       if (indexedCount === 0) {
@@ -477,3 +485,78 @@ export async function startIndexing(path: string, maxDepth: number = 10): Promis
     errorMessage.set(`Failed to start indexing: ${e}`);
   }
 }
+
+export async function deleteFile(path: string, isDir: boolean): Promise<void> {
+  try {
+    await invoke('delete_path', { path, isDir });
+    const currentDirPath = get(currentPath);
+    if (currentDirPath) {
+      await navigateTo(currentDirPath, false);
+    }
+  } catch (e) {
+    errorMessage.set(`Failed to delete: ${e}`);
+    throw e;
+  }
+}
+
+export async function renameFile(oldPath: string, newName: string): Promise<void> {
+  try {
+    await invoke('rename_path', { oldPath, newName });
+    const currentDirPath = get(currentPath);
+    if (currentDirPath) {
+      await navigateTo(currentDirPath, false);
+    }
+  } catch (e) {
+    errorMessage.set(`Failed to rename: ${e}`);
+    throw e;
+  }
+}
+
+export function copyToClipboard(paths: string[]): void {
+  clipboard.set({ paths, operation: 'copy' });
+}
+
+export function cutToClipboard(paths: string[]): void {
+  clipboard.set({ paths, operation: 'cut' });
+}
+
+export async function pasteFromClipboard(destinationDir?: string): Promise<void> {
+  const clip = get(clipboard);
+  if (!clip) return;
+  
+  const destDir = destinationDir || get(currentPath);
+  if (!destDir) return;
+  
+  try {
+    if (clip.operation === 'copy') {
+      await invoke('batch_copy_paths', { sources: clip.paths, destinationDir: destDir });
+    } else {
+      await invoke('batch_move_paths', { sources: clip.paths, destinationDir: destDir });
+      clipboard.set(null);
+    }
+    
+    await navigateTo(destDir, false);
+  } catch (e) {
+    errorMessage.set(`Failed to paste: ${e}`);
+    throw e;
+  }
+}
+
+export async function moveFile(source: string, destination: string): Promise<void> {
+  try {
+    await invoke('move_path', { source, destination });
+  } catch (e) {
+    errorMessage.set(`Failed to move: ${e}`);
+    throw e;
+  }
+}
+
+export async function copyFile(source: string, destination: string): Promise<void> {
+  try {
+    await invoke('copy_path', { source, destination });
+  } catch (e) {
+    errorMessage.set(`Failed to copy: ${e}`);
+    throw e;
+  }
+}
+

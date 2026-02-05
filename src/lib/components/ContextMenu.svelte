@@ -2,7 +2,18 @@
   import { onMount, onDestroy } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import type { FileEntry } from '$lib/types';
-  import { enterSelected, navigateTo, currentPath, startIndexing } from '$lib/store';
+  import { 
+    enterSelected, 
+    navigateTo, 
+    currentPath, 
+    startIndexing,
+    copyToClipboard,
+    cutToClipboard,
+    pasteFromClipboard,
+    deleteFile,
+    renameFile,
+    clipboard
+  } from '$lib/store';
   import { get } from 'svelte/store';
   
   export let x = 0;
@@ -77,6 +88,33 @@
     }
   }
 
+  function copyFilesToClipboard() {
+    if (entry) {
+      copyToClipboard([entry.path]);
+      onClose();
+    }
+  }
+
+  function cutFilesToClipboard() {
+    if (entry) {
+      cutToClipboard([entry.path]);
+      onClose();
+    }
+  }
+
+  async function pasteFiles() {
+    try {
+      const destDir = entry?.is_dir ? entry.path : get(currentPath);
+      if (destDir) {
+        await pasteFromClipboard(destDir);
+        onRefresh();
+      }
+    } catch (e) {
+      console.error('Failed to paste:', e);
+    }
+    onClose();
+  }
+
   async function openItem() {
     if (entry) {
       if (entry.is_dir) {
@@ -131,7 +169,7 @@
   async function confirmRename() {
     if (entry && renameValue && renameValue !== entry.name) {
       try {
-        await invoke('rename_path', { oldPath: entry.path, newName: renameValue });
+        await renameFile(entry.path, renameValue);
         onRefresh();
       } catch (e) {
         alert(`Failed to rename: ${e}`);
@@ -160,7 +198,7 @@
   async function confirmDelete() {
     if (entry) {
       try {
-        await invoke('delete_path', { path: entry.path, isDir: entry.is_dir });
+        await deleteFile(entry.path, entry.is_dir);
         deleteModal = false;
         onRefresh();
         onClose();
@@ -214,6 +252,10 @@
 
   $: menuItems = entry ? [
     { label: 'Open', icon: '↵', action: openItem, disabled: false },
+    { label: '', icon: '', action: () => {}, separator: true },
+    { label: 'Cut', icon: '✂', action: cutFilesToClipboard, disabled: false },
+    { label: 'Copy', icon: '⎘', action: copyFilesToClipboard, disabled: false },
+    { label: 'Paste', icon: '⎗', action: pasteFiles, disabled: !$clipboard },
     { label: '', icon: '', action: () => {}, separator: true },
     ...(entry.is_dir ? [
       { label: 'Index Directory', icon: '⚡', action: indexDirectory, disabled: false },

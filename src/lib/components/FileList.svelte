@@ -15,7 +15,8 @@
     isPickerMode,
     pickerConfig,
     pickerSelection,
-    togglePickerSelection
+    togglePickerSelection,
+    moveFile
   } from '$lib/store';
   import { get } from 'svelte/store';
   import ContextMenu from './ContextMenu.svelte';
@@ -34,6 +35,9 @@
   let contextMenuX = 0;
   let contextMenuY = 0;
   let contextMenuEntry: FileEntry | null = null;
+
+  let draggedEntry: FileEntry | null = null;
+  let dragOverEntry: FileEntry | null = null;
 
   $: totalHeight = $entries.length * ITEM_HEIGHT;
   $: visibleStart = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - OVERSCAN);
@@ -102,6 +106,69 @@
     }
   }
 
+  function handleDragStart(e: DragEvent, entry: FileEntry) {
+    if (!e.dataTransfer) return;
+    draggedEntry = entry;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', entry.path);
+    
+    const target = e.target as HTMLElement;
+    target.style.opacity = '0.5';
+  }
+
+  function handleDragEnd(e: DragEvent) {
+    const target = e.target as HTMLElement;
+    target.style.opacity = '1';
+    draggedEntry = null;
+    dragOverEntry = null;
+  }
+
+  function handleDragOver(e: DragEvent, entry: FileEntry) {
+    if (!draggedEntry || !entry.is_dir) return;
+    if (draggedEntry.path === entry.path) return;
+    
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+    dragOverEntry = entry;
+  }
+
+  function handleDragLeave(e: DragEvent, entry: FileEntry) {
+    if (dragOverEntry?.path === entry.path) {
+      dragOverEntry = null;
+    }
+  }
+
+  async function handleDrop(e: DragEvent, targetEntry: FileEntry) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!targetEntry.is_dir || !draggedEntry) {
+      dragOverEntry = null;
+      return;
+    }
+    
+    if (draggedEntry.path === targetEntry.path) {
+      dragOverEntry = null;
+      return;
+    }
+    
+    try {
+      const fileName = draggedEntry.path.split('/').pop();
+      if (!fileName) return;
+      
+      const destination = `${targetEntry.path}/${fileName}`;
+      await moveFile(draggedEntry.path, destination);
+      await refreshDirectory();
+    } catch (e) {
+      console.error('Failed to move file:', e);
+    } finally {
+      dragOverEntry = null;
+      draggedEntry = null;
+    }
+  }
+
   $: if (container && $entries.length > 0 && containerHeight > 0 && !mouseUsedRecently && $selectedIndex !== lastKeyboardIndex) {
     lastKeyboardIndex = $selectedIndex;
     const selectedTop = $selectedIndex * ITEM_HEIGHT;
@@ -126,19 +193,27 @@
   });
 </script>
 
-<div class="file-list-container" bind:this={container} onscroll={handleScroll} onmousemove={handleMouseMove}>
+<div class="file-list-container" bind:this={container} onscroll={handleScroll} onmousemove={handleMouseMove} role="region" aria-label="File list">
   <div class="file-list-scroll" style="height: {totalHeight}px">
     {#each visibleItems as { entry, index, top } (entry.path)}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
       <div
         class="file-row"
         class:selected={index === $selectedIndex}
         class:picker-selected={$pickerSelection.has(entry.path)}
         class:directory={entry.is_dir}
         class:hidden-file={entry.hidden}
+        class:drag-over={dragOverEntry?.path === entry.path}
         style="transform: translateY({top}px)"
         onclick={() => handleClick(index, entry)}
         ondblclick={() => handleDoubleClick(index, entry)}
         oncontextmenu={(e) => handleRightClick(e, index, entry)}
+        draggable="true"
+        ondragstart={(e) => handleDragStart(e, entry)}
+        ondragend={handleDragEnd}
+        ondragover={(e) => handleDragOver(e, entry)}
+        ondragleave={(e) => handleDragLeave(e, entry)}
+        ondrop={(e) => handleDrop(e, entry)}
         role="row"
         tabindex="-1"
       >
@@ -218,6 +293,11 @@
 
   .file-row.picker-selected.selected {
     background: rgba(255, 87, 34, 0.2);
+  }
+
+  .file-row.drag-over {
+    background: rgba(66, 165, 245, 0.2);
+    border: 1px dashed var(--text-secondary);
   }
 
   .file-icon {

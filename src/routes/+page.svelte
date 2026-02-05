@@ -32,7 +32,12 @@
     loadPreview,
     isPickerMode,
     confirmPickerSelection,
-    cancelPicker
+    cancelPicker,
+    copyToClipboard,
+    cutToClipboard,
+    pasteFromClipboard,
+    deleteFile,
+    currentPath
   } from '$lib/store';
 
   let statusInterval: ReturnType<typeof setInterval>;
@@ -58,6 +63,36 @@
         cancelPicker();
         return;
       }
+    }
+
+    if (e.ctrlKey && !e.shiftKey && !e.altKey) {
+      if (e.key === 'c') {
+        e.preventDefault();
+        if ($selectedEntry) {
+          copyToClipboard([$selectedEntry.path]);
+        }
+        return;
+      }
+      if (e.key === 'x') {
+        e.preventDefault();
+        if ($selectedEntry) {
+          cutToClipboard([$selectedEntry.path]);
+        }
+        return;
+      }
+      if (e.key === 'v') {
+        e.preventDefault();
+        pasteFromClipboard();
+        return;
+      }
+    }
+
+    if (e.key === 'Delete' && $selectedEntry && !$commandPaletteOpen) {
+      e.preventDefault();
+      if (confirm(`Delete ${$selectedEntry.name}?`)) {
+        deleteFile($selectedEntry.path, $selectedEntry.is_dir);
+      }
+      return;
     }
 
     if (e.ctrlKey && e.key === 'p') {

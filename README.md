@@ -9,9 +9,10 @@ Fast file manager built with Rust and Svelte. Sub-150ms cold start, native OS in
 
 - **Native browser integration** - Becomes your system file picker (Linux)
 - **Keyboard-first** - Full navigation without touching the mouse
+- **File operations** - Copy, cut, paste, move via drag-and-drop, delete
 - **Fast search** - SQLite FTS5 indexing with fuzzy matching
 - **Multi-threaded** - Parallel directory crawling with jwalk
-- **Low memory** - <25MB RAM idle
+- **Low memory** - <250MB RAM
 - **CLI picker mode** - Use as file picker in scripts
 - **Default app integration** - Open files with system default applications
 
@@ -60,12 +61,16 @@ Multi-threaded crawling with jwalk + rayon. Optimized SQLite inserts with prepar
 | `j` `k` | Navigate up/down |
 | `h` `l` | Parent / enter directory |
 | `Enter` | Open file with default app / enter directory |
+| `Ctrl+C` | Copy selected file to clipboard |
+| `Ctrl+X` | Cut selected file to clipboard |
+| `Ctrl+V` | Paste file from clipboard |
+| `Delete` | Delete selected file/directory |
 | `p` | Toggle preview |
 | `b` | Toggle sidebar |
 | `Ctrl+H` | Toggle hidden files |
 | `Alt+` `<-` `->` | History navigation |
 
-**Mouse:** Double-click files to open with default application. Right-click for context menu.
+**Mouse:** Double-click files to open with default application. Right-click for context menu. **Drag and drop** files/directories to move them into other directories.
 
 ## CLI Picker Mode
 
