@@ -63,7 +63,7 @@ Multi-threaded crawling with jwalk + rayon. Optimized SQLite inserts with prepar
 | `p` | Toggle preview |
 | `b` | Toggle sidebar |
 | `Ctrl+H` | Toggle hidden files |
-| `Alt+←` `→` | History navigation |
+| `Alt+` `<-` `->` | History navigation |
 
 **Mouse:** Double-click files to open with default application. Right-click for context menu.
 
