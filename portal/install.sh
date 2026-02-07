@@ -28,12 +28,13 @@ mkdir -p ~/.local/share/dbus-1/services
 cp "$SCRIPT_DIR/org.freedesktop.impl.portal.desktop.hardbore.service" \
    ~/.local/share/dbus-1/services/
 
-pkill -f xdg-desktop-portal 2>/dev/null || true
 pkill -f hardbore-portal 2>/dev/null || true
+pkill -f xdg-desktop-portal 2>/dev/null || true
 sleep 1
 
-/usr/local/bin/hardbore-portal &
+systemctl --user restart xdg-desktop-portal 2>/dev/null || true
 
-echo "Done. HardBore is now your system file picker. :D"
+echo "Done. HardBore is now your system file picker."
+echo "D-Bus will auto-activate the portal service when needed."
 
 

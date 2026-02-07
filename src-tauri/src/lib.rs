@@ -14,6 +14,8 @@ pub struct PickerConfig {
     pub mode: PickerMode,
     pub allow_multiple: bool,
     pub file_types: Option<Vec<String>>,
+    pub start_dir: Option<String>,
+    pub current_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -22,6 +24,7 @@ pub enum PickerMode {
     Files,
     Directories,
     Both,
+    Save,
 }
 
 struct AppState {
@@ -641,6 +644,8 @@ pub fn run() {
     let mut picker_mode = PickerMode::Disabled;
     let mut allow_multiple = false;
     let mut file_types: Option<Vec<String>> = None;
+    let mut start_dir: Option<String> = None;
+    let mut current_name: Option<String> = None;
     
     let mut i = 1;
     while i < args.len() {
@@ -648,10 +653,23 @@ pub fn run() {
             "--picker" => picker_mode = PickerMode::Files,
             "--picker-dirs" => picker_mode = PickerMode::Directories,
             "--picker-both" => picker_mode = PickerMode::Both,
+            "--picker-save" => picker_mode = PickerMode::Save,
             "--multiple" => allow_multiple = true,
             "--types" => {
                 if i + 1 < args.len() {
                     file_types = Some(args[i + 1].split(',').map(|s| s.to_string()).collect());
+                    i += 1;
+                }
+            }
+            "--start-dir" => {
+                if i + 1 < args.len() {
+                    start_dir = Some(args[i + 1].clone());
+                    i += 1;
+                }
+            }
+            "--current-name" => {
+                if i + 1 < args.len() {
+                    current_name = Some(args[i + 1].clone());
                     i += 1;
                 }
             }
@@ -664,6 +682,8 @@ pub fn run() {
         mode: picker_mode,
         allow_multiple,
         file_types,
+        start_dir,
+        current_name,
     };
 
     tauri::Builder::default()

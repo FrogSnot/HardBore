@@ -273,26 +273,24 @@
     { label: 'Properties', icon: 'icon-info', action: showProperties, disabled: false },
   ] as MenuItem[] : [];
 
-  $: if (visible && menuElement) {
-    menuX = x;
-    menuY = y;
-    
-    const rect = menuElement.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    if (menuX + rect.width > viewportWidth) {
-      menuX = viewportWidth - rect.width - 15;
-    }
-    
-    if (menuY + rect.height > viewportHeight) {
-      menuY = viewportHeight - rect.height - 15;
-    }
-  }
-
   $: if (visible) {
-    menuX = x;
-    menuY = y;
+    // CSS zoom on <html> causes the right click menu to be misplaced, so we need to adjust the coordinates based on the zoom level
+    const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+    menuX = x / zoom;
+    menuY = y / zoom;
+
+    if (menuElement) {
+      const rect = menuElement.getBoundingClientRect();
+      const viewportWidth = window.innerWidth / zoom;
+      const viewportHeight = window.innerHeight / zoom;
+
+      if (menuX + rect.width > viewportWidth) {
+        menuX = viewportWidth - rect.width - 4;
+      }
+      if (menuY + rect.height > viewportHeight) {
+        menuY = viewportHeight - rect.height - 4;
+      }
+    }
   }
 
   onMount(() => {

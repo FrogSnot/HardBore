@@ -12,6 +12,7 @@ RELEASE-CHECKLIST.md
 
 # Tauri
 src-tauri/target/
+src-tauri/gen/schemas
 src-tauri/WixTools/
 
 # Logs

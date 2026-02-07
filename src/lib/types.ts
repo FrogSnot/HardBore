@@ -69,10 +69,12 @@ export interface ViewConfig {
   sidebarOpen: boolean;
 }
 
-export type PickerMode = 'Disabled' | 'Files' | 'Directories' | 'Both';
+export type PickerMode = 'Disabled' | 'Files' | 'Directories' | 'Both' | 'Save';
 
 export interface PickerConfig {
   mode: PickerMode;
   allow_multiple: boolean;
   file_types: string[] | null;
+  start_dir: string | null;
+  current_name: string | null;
 }

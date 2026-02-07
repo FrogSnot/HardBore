@@ -16,7 +16,9 @@
     pickerConfig,
     pickerSelection,
     togglePickerSelection,
-    moveFile
+    moveFile,
+    copyFile,
+    saveName
   } from '$lib/store';
   import { get } from 'svelte/store';
   import ContextMenu from './ContextMenu.svelte';
@@ -37,7 +39,12 @@
   let contextMenuEntry: FileEntry | null = null;
 
   let draggedEntry: FileEntry | null = null;
-  let dragOverEntry: FileEntry | null = null;
+  let dropTargetPath: string | null = null;
+  let _dropTargetEl: HTMLElement | null = null;
+
+  let _mouseDown: { entry: FileEntry; x: number; y: number } | null = null;
+  let _dragGhost: HTMLElement | null = null;
+  const DRAG_THRESHOLD = 25;
 
   $: totalHeight = $entries.length * ITEM_HEIGHT;
   $: visibleStart = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - OVERSCAN);
@@ -67,6 +74,12 @@
     
     if ($isPickerMode) {
       const config = get(pickerConfig);
+      if (config?.mode === 'Save') {
+        if (!entry.is_dir) {
+          saveName.set(entry.name);
+        }
+        return;
+      }
       if (config?.mode === 'Files' && entry.is_dir) return;
       if (config?.mode === 'Directories' && !entry.is_dir) return;
       
@@ -106,66 +119,97 @@
     }
   }
 
-  function handleDragStart(e: DragEvent, entry: FileEntry) {
-    if (!e.dataTransfer) return;
-    draggedEntry = entry;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', entry.path);
-    
-    const target = e.target as HTMLElement;
-    target.style.opacity = '0.5';
+  function handleRowMouseDown(e: MouseEvent, entry: FileEntry) {
+    if (e.button !== 0) return;
+    _mouseDown = { entry, x: e.clientX, y: e.clientY };
   }
 
-  function handleDragEnd(e: DragEvent) {
-    const target = e.target as HTMLElement;
-    target.style.opacity = '1';
-    draggedEntry = null;
-    dragOverEntry = null;
-  }
+  function handleWindowMouseMove(e: MouseEvent) {
+    if (!_mouseDown) return;
 
-  function handleDragOver(e: DragEvent, entry: FileEntry) {
-    if (!draggedEntry || !entry.is_dir) return;
-    if (draggedEntry.path === entry.path) return;
-    
-    e.preventDefault();
-    if (e.dataTransfer) {
-      e.dataTransfer.dropEffect = 'move';
+    const dx = e.clientX - _mouseDown.x;
+    const dy = e.clientY - _mouseDown.y;
+
+    if (!draggedEntry && (dx * dx + dy * dy) > DRAG_THRESHOLD * DRAG_THRESHOLD) {
+      draggedEntry = _mouseDown.entry;
+      _dragGhost = document.createElement('div');
+      _dragGhost.textContent = `${getFileIcon(draggedEntry)} ${draggedEntry.name}`;
+      Object.assign(_dragGhost.style, {
+        position: 'fixed', zIndex: '10000', pointerEvents: 'none',
+        padding: '4px 12px', borderRadius: '4px',
+        background: '#2a2a2a', color: '#e0e0e0',
+        fontSize: '13px', fontFamily: "'JetBrains Mono', monospace",
+        border: '1px solid #3a3a3a', whiteSpace: 'nowrap',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
+      });
+      document.body.appendChild(_dragGhost);
+      document.addEventListener('click', _suppressNextClick, { once: true, capture: true });
     }
-    dragOverEntry = entry;
-  }
 
-  function handleDragLeave(e: DragEvent, entry: FileEntry) {
-    if (dragOverEntry?.path === entry.path) {
-      dragOverEntry = null;
+    if (!draggedEntry || !_dragGhost) return;
+
+    const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+    _dragGhost.style.left = `${e.clientX / zoom + 14}px`;
+    _dragGhost.style.top = `${e.clientY / zoom + 14}px`;
+
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const target = el?.closest('[data-drop-path]') as HTMLElement | null;
+    const path = target?.dataset.dropPath ?? null;
+    dropTargetPath = (path && path !== draggedEntry.path) ? path : null;
+
+    if (_dropTargetEl && _dropTargetEl !== target) {
+      _dropTargetEl.classList.remove('drop-highlight');
+    }
+    if (dropTargetPath && target) {
+      target.classList.add('drop-highlight');
+      _dropTargetEl = target;
+    } else if (_dropTargetEl) {
+      _dropTargetEl.classList.remove('drop-highlight');
+      _dropTargetEl = null;
     }
   }
 
-  async function handleDrop(e: DragEvent, targetEntry: FileEntry) {
+  async function handleWindowMouseUp(e: MouseEvent) {
+    if (draggedEntry && dropTargetPath) {
+      try {
+        await performFileOperation(draggedEntry.path, dropTargetPath, e.ctrlKey);
+      } finally {
+        await refreshDirectory();
+      }
+    }
+    _cleanupDrag();
+  }
+
+  function _suppressNextClick(e: Event) {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (!targetEntry.is_dir || !draggedEntry) {
-      dragOverEntry = null;
-      return;
+  }
+
+  async function performFileOperation(sourcePath: string, targetDir: string, isCopy: boolean) {
+    const fileName = sourcePath.split('/').pop();
+    if (!fileName) return;
+    const destination = `${targetDir}/${fileName}`;
+    if (sourcePath === destination) return;
+    if (destination.startsWith(sourcePath + '/')) return;
+
+    if (isCopy) {
+      await copyFile(sourcePath, destination);
+    } else {
+      await moveFile(sourcePath, destination);
     }
-    
-    if (draggedEntry.path === targetEntry.path) {
-      dragOverEntry = null;
-      return;
+  }
+
+  function _cleanupDrag() {
+    _mouseDown = null;
+    draggedEntry = null;
+    dropTargetPath = null;
+    if (_dropTargetEl) {
+      _dropTargetEl.classList.remove('drop-highlight');
+      _dropTargetEl = null;
     }
-    
-    try {
-      const fileName = draggedEntry.path.split('/').pop();
-      if (!fileName) return;
-      
-      const destination = `${targetEntry.path}/${fileName}`;
-      await moveFile(draggedEntry.path, destination);
-      await refreshDirectory();
-    } catch (e) {
-      console.error('Failed to move file:', e);
-    } finally {
-      dragOverEntry = null;
-      draggedEntry = null;
+    if (_dragGhost) {
+      _dragGhost.remove();
+      _dragGhost = null;
     }
   }
 
@@ -193,6 +237,8 @@
   });
 </script>
 
+<svelte:window onmousemove={handleWindowMouseMove} onmouseup={handleWindowMouseUp} />
+
 <div class="file-list-container" bind:this={container} onscroll={handleScroll} onmousemove={handleMouseMove} role="region" aria-label="File list">
   <div class="file-list-scroll" style="height: {totalHeight}px">
     {#each visibleItems as { entry, index, top } (entry.path)}
@@ -203,17 +249,13 @@
         class:picker-selected={$pickerSelection.has(entry.path)}
         class:directory={entry.is_dir}
         class:hidden-file={entry.hidden}
-        class:drag-over={dragOverEntry?.path === entry.path}
+        class:dragging={draggedEntry?.path === entry.path}
         style="transform: translateY({top}px)"
+        data-drop-path={entry.is_dir ? entry.path : null}
+        onmousedown={(e) => handleRowMouseDown(e, entry)}
         onclick={() => handleClick(index, entry)}
         ondblclick={() => handleDoubleClick(index, entry)}
         oncontextmenu={(e) => handleRightClick(e, index, entry)}
-        draggable="true"
-        ondragstart={(e) => handleDragStart(e, entry)}
-        ondragend={handleDragEnd}
-        ondragover={(e) => handleDragOver(e, entry)}
-        ondragleave={(e) => handleDragLeave(e, entry)}
-        ondrop={(e) => handleDrop(e, entry)}
         role="row"
         tabindex="-1"
       >
@@ -274,6 +316,8 @@
     gap: var(--spacing-sm);
     cursor: default;
     border-bottom: 1px solid transparent;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .file-row:hover {
@@ -295,9 +339,18 @@
     background: rgba(255, 87, 34, 0.2);
   }
 
-  .file-row.drag-over {
-    background: rgba(66, 165, 245, 0.2);
-    border: 1px dashed var(--text-secondary);
+  .file-row:global(.drop-highlight) {
+    background: rgba(66, 165, 245, 0.15);
+    border: 1px dashed rgba(66, 165, 245, 0.5);
+    border-radius: var(--radius-sm);
+  }
+
+  .file-row:global(.drop-highlight) .file-icon {
+    color: #42a5f5;
+  }
+
+  .file-row.dragging {
+    opacity: 0.3;
   }
 
   .file-icon {

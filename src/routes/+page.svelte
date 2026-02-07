@@ -31,6 +31,7 @@
     selectedEntry,
     loadPreview,
     isPickerMode,
+    pickerConfig,
     confirmPickerSelection,
     cancelPicker,
     copyToClipboard,
@@ -55,7 +56,11 @@
     if ($isPickerMode) {
       if (e.key === 'Enter') {
         e.preventDefault();
-        confirmPickerSelection();
+        if ($pickerConfig?.mode === 'Save' && $selectedEntry?.is_dir) {
+          enterSelected();
+        } else if ($pickerConfig?.mode !== 'Save') {
+          confirmPickerSelection();
+        }
         return;
       }
       if (e.key === 'Escape') {

@@ -98,10 +98,11 @@
     />
   {:else}
     <div class="path-display mono" onclick={startEdit} role="button" tabindex="0" onkeydown={(e) => e.key === 'Enter' && startEdit()}>
-      <button class="segment root" onclick={(e) => { e.stopPropagation(); navigateTo('/'); }} type="button">/</button>
+      <button class="segment root" data-drop-path="/" onclick={(e) => { e.stopPropagation(); navigateTo('/'); }} type="button">/</button>
       {#each segments as segment, i}
         <button 
           class="segment"
+          data-drop-path={'/' + segments.slice(0, i + 1).join('/')}
           onclick={(e) => { e.stopPropagation(); navigateTo('/' + segments.slice(0, i + 1).join('/')); }}
           type="button"
         >
@@ -240,6 +241,12 @@
   .segment:last-child {
     color: var(--text-primary);
     font-weight: 500;
+  }
+
+  .segment:global(.drop-highlight) {
+    background: rgba(66, 165, 245, 0.2);
+    color: #42a5f5;
+    outline: 1px dashed rgba(66, 165, 245, 0.5);
   }
 
   .separator {

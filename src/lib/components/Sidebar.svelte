@@ -24,9 +24,10 @@
 
   function handleRightClick(event: MouseEvent, path: string) {
     event.preventDefault();
+    const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
     contextMenuPath = path;
-    contextMenuX = event.clientX;
-    contextMenuY = event.clientY;
+    contextMenuX = event.clientX / zoom;
+    contextMenuY = event.clientY / zoom;
     showContextMenu = true;
   }
 
@@ -78,6 +79,7 @@
           <button 
             class="sidebar-item"
             class:active={$currentPath === fav}
+            data-drop-path={fav}
             on:click={() => handleFavoriteClick(fav)}
             on:contextmenu={(e) => handleRightClick(e, fav)}
           >
@@ -101,6 +103,7 @@
           <button 
             class="sidebar-item"
             class:active={$currentPath === mount.path}
+            data-drop-path={mount.path}
             on:click={() => handleMountClick(mount)}
             on:contextmenu={(e) => handleRightClick(e, mount.path)}
             title={mount.device}
@@ -214,6 +217,11 @@
   .sidebar-item.active {
     background: rgba(255, 255, 255, 0.06);
     border-left-color: var(--safety-orange);
+  }
+
+  .sidebar-item:global(.drop-highlight) {
+    background: rgba(66, 165, 245, 0.15);
+    border-left-color: #42a5f5;
   }
 
   .item-icon {

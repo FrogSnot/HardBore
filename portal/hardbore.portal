@@ -1,4 +1,4 @@
 [portal]
 DBusName=org.freedesktop.impl.portal.desktop.hardbore
 Interfaces=org.freedesktop.impl.portal.FileChooser;
-UseIn=gnome;kde;xfce;mate;lxde;sway;i3;bspwm;dwm;xmonad;qtile;awesome;herbstluftwm;openbox;fluxbox;icewm;jwm;
+UseIn=gnome;kde;xfce;mate;lxde;sway;i3;bspwm;dwm;xmonad;qtile;awesome;herbstluftwm;openbox;fluxbox;icewm;jwm;hyprland;river;niri;wayfire;labwc;cage;gamescope;cosmic;cinnamon;pantheon;budgie;

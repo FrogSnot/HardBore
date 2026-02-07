@@ -1,46 +1,99 @@
 <script lang="ts">
-  import { pickerConfig, pickerSelection, confirmPickerSelection, cancelPicker } from '$lib/store';
+  import { pickerConfig, pickerSelection, confirmPickerSelection, cancelPicker, saveName, isSaveMode, currentPath } from '$lib/store';
 
   $: selectionCount = $pickerSelection.size;
   $: hasSelection = selectionCount > 0;
+  $: saveMode = $isSaveMode;
   $: modeText = $pickerConfig?.mode === 'Files' ? 'files' : $pickerConfig?.mode === 'Directories' ? 'directories' : 'items';
   $: multipleAllowed = $pickerConfig?.allow_multiple ?? false;
+  $: hasSaveName = $saveName.trim().length > 0;
+
+  function handleSaveNameKeydown(e: KeyboardEvent) {
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      confirmPickerSelection();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelPicker();
+    }
+  }
+
+  function handleSaveNameInput(e: Event) {
+    const target = e.target as HTMLInputElement;
+    saveName.set(target.value);
+  }
 </script>
 
 <div class="picker-bar">
-  <div class="picker-info">
-    <span class="picker-label">SELECT MODE</span>
-    <span class="picker-details text-muted">
-      {#if selectionCount === 0}
-        {#if multipleAllowed}
-          Click to select {modeText} • Multiple selection enabled
+  {#if saveMode}
+    <div class="picker-info">
+      <span class="picker-label">SAVE FILE</span>
+    </div>
+    <div class="save-input-wrapper">
+      <span class="save-path mono text-muted">{$currentPath}/</span>
+      <input
+        class="save-input mono"
+        type="text"
+        value={$saveName}
+        oninput={handleSaveNameInput}
+        onkeydown={handleSaveNameKeydown}
+        placeholder="filename.ext"
+        spellcheck="false"
+      />
+    </div>
+    <div class="picker-actions">
+      <button
+        class="picker-btn cancel"
+        onclick={cancelPicker}
+        type="button"
+      >
+        Cancel (Esc)
+      </button>
+      <button
+        class="picker-btn confirm"
+        class:disabled={!hasSaveName}
+        disabled={!hasSaveName}
+        onclick={confirmPickerSelection}
+        type="button"
+      >
+        Save (Enter)
+      </button>
+    </div>
+  {:else}
+    <div class="picker-info">
+      <span class="picker-label">SELECT MODE</span>
+      <span class="picker-details text-muted">
+        {#if selectionCount === 0}
+          {#if multipleAllowed}
+            Click to select {modeText} • Multiple selection enabled
+          {:else}
+            Click to select a {modeText.slice(0, -1)}
+          {/if}
         {:else}
-          Click to select a {modeText.slice(0, -1)}
+          {selectionCount} {modeText} selected
         {/if}
-      {:else}
-        {selectionCount} {modeText} selected
-      {/if}
-    </span>
-  </div>
-  
-  <div class="picker-actions">
-    <button 
-      class="picker-btn cancel"
-      onclick={cancelPicker}
-      type="button"
-    >
-      Cancel (Esc)
-    </button>
-    <button 
-      class="picker-btn confirm"
-      class:disabled={!hasSelection}
-      disabled={!hasSelection}
-      onclick={confirmPickerSelection}
-      type="button"
-    >
-      Select{selectionCount > 0 ? ` (${selectionCount})` : ''} (Enter)
-    </button>
-  </div>
+      </span>
+    </div>
+    <div class="picker-actions">
+      <button 
+        class="picker-btn cancel"
+        onclick={cancelPicker}
+        type="button"
+      >
+        Cancel (Esc)
+      </button>
+      <button 
+        class="picker-btn confirm"
+        class:disabled={!hasSelection}
+        disabled={!hasSelection}
+        onclick={confirmPickerSelection}
+        type="button"
+      >
+        Select{selectionCount > 0 ? ` (${selectionCount})` : ''} (Enter)
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -115,5 +168,44 @@
   .picker-btn.confirm:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  .save-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--basalt-deep);
+    border: 1px solid var(--zinc-border);
+    border-radius: var(--radius-sm);
+    padding: 0 var(--spacing-sm);
+    box-shadow: var(--shadow-inset-sm);
+    overflow: hidden;
+  }
+
+  .save-path {
+    font-size: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    direction: rtl;
+    text-align: left;
+  }
+
+  .save-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 13px;
+    padding: var(--spacing-sm) var(--spacing-xs);
+    outline: none;
+    min-width: 100px;
+  }
+
+  .save-input::placeholder {
+    color: var(--text-dim);
   }
 </style>

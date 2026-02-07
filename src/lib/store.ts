@@ -29,6 +29,8 @@ export const mountPoints = writable<MountPoint[]>([]);
 export const pickerConfig = writable<PickerConfig | null>(null);
 export const pickerSelection = writable<Set<string>>(new Set());
 export const isPickerMode = derived(pickerConfig, $config => $config?.mode !== 'Disabled');
+export const saveName = writable<string>('');
+export const isSaveMode = derived(pickerConfig, $config => $config?.mode === 'Save');
 
 export interface ClipboardItem {
   paths: string[];
@@ -353,7 +355,12 @@ export async function initializeApp(): Promise<void> {
     await loadFavorites();
     await loadMountPoints();
     
-    const cwd = await invoke<string | null>('get_current_dir');
+    const config = get(pickerConfig);
+    if (config?.current_name) {
+      saveName.set(config.current_name);
+    }
+    
+    const cwd = config?.start_dir || await invoke<string | null>('get_current_dir');
     const startPath = cwd || await invoke<string | null>('get_home');
     
     if (startPath) {
@@ -463,6 +470,15 @@ export function clearPickerSelection(): void {
 
 export async function confirmPickerSelection(): Promise<void> {
   try {
+    const config = get(pickerConfig);
+    if (config?.mode === 'Save') {
+      const name = get(saveName).trim();
+      const dir = get(currentPath);
+      if (name && dir) {
+        await invoke('select_files', { paths: [`${dir}/${name}`] });
+      }
+      return;
+    }
     const selection = Array.from(get(pickerSelection));
     await invoke('select_files', { paths: selection });
   } catch (e) {
