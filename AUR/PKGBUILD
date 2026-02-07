@@ -11,18 +11,12 @@ makedepends=('npm' 'rust' 'cargo')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
 sha256sums=('SKIP')
 
-prepare() {
-    cd "$srcdir/HardBore-$pkgver"
-    npm install
-}
-
 build() {
     cd "$srcdir/HardBore-$pkgver"
     export CARGO_HOME="$srcdir/cargo-home"
-    npm run build
-    cd src-tauri
-    cargo build --release
-    cd ../portal
+    npm install
+    npx tauri build --no-bundle
+    cd portal
     cargo build --release
 }
 
