@@ -19,7 +19,7 @@ jobs:
             bundles: dmg
           - platform: macos-latest
             target: x86_64-apple-darwin
-            bundles: dmg
+            bundles: app
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
             bundles: nsis
@@ -98,11 +98,18 @@ jobs:
           path: portal/target/${{ matrix.target }}/release/portal
 
       - name: Upload .dmg
-        if: runner.os == 'macOS'
+        if: matrix.bundles == 'dmg'
         uses: actions/upload-artifact@v4
         with:
           name: hardbore-macos-dmg-${{ matrix.target }}
           path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+
+      - name: Upload macOS app (x86_64)
+        if: matrix.bundles == 'app'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardbore-macos-app-${{ matrix.target }}
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/macos/
 
       - name: Upload NSIS installer
         if: runner.os == 'Windows'
@@ -133,6 +140,7 @@ jobs:
             artifacts/**/*.AppImage
             artifacts/**/portal
             artifacts/**/*.dmg
+            artifacts/**/*.app
             artifacts/**/*.exe
           draft: false
           prerelease: false
