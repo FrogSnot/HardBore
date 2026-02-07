@@ -14,11 +14,6 @@ name = "hardbore_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
-name = "portal"
-path = "src/bin/portal.rs"
-required-features = ["portal"]
-
-[[bin]]
 name = "stress_test"
 path = "benches/stress_test.rs"
 
@@ -40,7 +35,6 @@ jwalk = "0.8"
 rusqlite = { version = "0.33", features = ["bundled"] }
 
 
-tokio = { version = "1", features = ["full"], optional = true }
 
 
 chrono = { version = "0.4", features = ["serde"] }
@@ -57,10 +51,4 @@ fuzzy-matcher = "0.3"
 bincode = "1.3"
 bytemuck = { version = "1.18", features = ["derive"] }
 
-
-zbus = { version = "4.4", optional = true }
-async-trait = { version = "0.1", optional = true }
-
-[features]
-portal = ["dep:tokio", "dep:zbus", "dep:async-trait"]
 

@@ -13,12 +13,16 @@ jobs:
         include:
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+            bundles: deb,appimage
           - platform: macos-latest
             target: aarch64-apple-darwin
-          - platform: macos-13
+            bundles: dmg
+          - platform: macos-latest
             target: x86_64-apple-darwin
+            bundles: dmg
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
+            bundles: nsis
 
     runs-on: ${{ matrix.platform }}
 
@@ -64,13 +68,11 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
-        run: npm run tauri build -- --target ${{ matrix.target }}
+        run: npm run tauri build -- --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
       - name: Build portal binary
         if: runner.os == 'Linux'
-        run: |
-          cd src-tauri
-          cargo build --release --features portal --bin portal --target ${{ matrix.target }}
+        run: cd portal && cargo build --release --target ${{ matrix.target }}
 
       - name: Upload .deb
         if: runner.os == 'Linux'
@@ -93,7 +95,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: hardbore-portal
-          path: src-tauri/target/${{ matrix.target }}/release/portal
+          path: portal/target/${{ matrix.target }}/release/portal
 
       - name: Upload .dmg
         if: runner.os == 'macOS'
@@ -102,21 +104,12 @@ jobs:
           name: hardbore-macos-dmg-${{ matrix.target }}
           path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
 
-      - name: Upload .msi
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: hardbore-windows-msi
-          path: src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
-
       - name: Upload NSIS installer
         if: runner.os == 'Windows'
-        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: hardbore-windows-nsis
           path: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
-          if-no-files-found: warn
 
   release:
     needs: build
@@ -140,7 +133,6 @@ jobs:
             artifacts/**/*.AppImage
             artifacts/**/portal
             artifacts/**/*.dmg
-            artifacts/**/*.msi
             artifacts/**/*.exe
           draft: false
           prerelease: false

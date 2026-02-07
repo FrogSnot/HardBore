@@ -22,14 +22,15 @@ build() {
     npm run build
     cd src-tauri
     cargo build --release
-    cargo build --release --features portal --bin portal
+    cd ../portal
+    cargo build --release
 }
 
 package() {
     cd "$srcdir/HardBore-$pkgver"
 
     install -Dm755 "src-tauri/target/release/hardbore" "$pkgdir/usr/bin/hardbore"
-    install -Dm755 "src-tauri/target/release/portal" "$pkgdir/usr/local/bin/hardbore-portal"
+    install -Dm755 "portal/target/release/portal" "$pkgdir/usr/local/bin/hardbore-portal"
 
     install -Dm644 "hardbore.desktop" "$pkgdir/usr/share/applications/hardbore.desktop"
     install -Dm644 "src-tauri/icons/128x128.png" "$pkgdir/usr/share/pixmaps/hardbore.png"
