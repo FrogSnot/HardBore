@@ -6,7 +6,7 @@
 ![Tauri v2](https://img.shields.io/badge/Tauri-v2-FFC131?style=flat-square)
 ![Svelte 5](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square)
 
-> ⚠️ **Early stage project** — HardBore is very new and you will run into bugs. If you do, please [open an issue](https://github.com/FrogSnot/HardBore/issues). Bug reports help a lot.
+> ⚠️ **Early stage project** HardBore is very new and you will run into bugs. If you do, please [open an issue](https://github.com/FrogSnot/HardBore/issues). Bug reports help a lot.
 
 ![Screenshot](Media/Media-1.png)
 
