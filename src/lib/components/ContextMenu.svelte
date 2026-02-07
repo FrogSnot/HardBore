@@ -180,6 +180,7 @@
   }
 
   function handleRenameKeydown(e: KeyboardEvent) {
+    e.stopPropagation();
     if (e.key === 'Enter') {
       e.preventDefault();
       confirmRename();

@@ -18,6 +18,7 @@ export const currentDir = writable<DirectoryContents | null>(null);
 export const history = writable<string[]>([]);
 export const historyIndex = writable<number>(-1);
 export const selectedIndex = writable<number>(0);
+export const selectedIndices = writable<Set<number>>(new Set([0]));
 export const previewFile = writable<FilePreview | null>(null);
 export const previewLoading = writable<boolean>(false);
 export const commandPaletteOpen = writable<boolean>(false);
@@ -128,6 +129,45 @@ export const selectedEntry = derived(
   ([$entries, $index]) => $entries[$index] ?? null
 );
 
+export const selectedEntries = derived(
+  [entries, selectedIndices],
+  ([$entries, $indices]) => {
+    const result: FileEntry[] = [];
+    for (const i of $indices) {
+      if ($entries[i]) result.push($entries[i]);
+    }
+    return result;
+  }
+);
+
+export function selectSingle(index: number): void {
+  selectedIndex.set(index);
+  selectedIndices.set(new Set([index]));
+}
+
+export function selectToggle(index: number): void {
+  selectedIndex.set(index);
+  selectedIndices.update(s => {
+    const next = new Set(s);
+    if (next.has(index)) {
+      next.delete(index);
+      if (next.size === 0) next.add(index);
+    } else {
+      next.add(index);
+    }
+    return next;
+  });
+}
+
+export function selectRange(from: number, to: number): void {
+  const lo = Math.min(from, to);
+  const hi = Math.max(from, to);
+  const next = new Set<number>();
+  for (let i = lo; i <= hi; i++) next.add(i);
+  selectedIndex.set(to);
+  selectedIndices.set(next);
+}
+
 export async function navigateTo(path: string, addToHistory = true): Promise<void> {
   try {
     const config = get(viewConfig);
@@ -138,6 +178,7 @@ export async function navigateTo(path: string, addToHistory = true): Promise<voi
     
     currentDir.set(contents);
     selectedIndex.set(0);
+    selectedIndices.set(new Set([0]));
     
     if (addToHistory) {
       const hist = get(history);

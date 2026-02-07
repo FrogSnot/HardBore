@@ -4,6 +4,7 @@
   import { formatSize, formatDate, getFileIcon, basename } from '$lib/utils';
   import { 
     selectedIndex, 
+    selectedIndices,
     entries, 
     enterSelected, 
     selectNext, 
@@ -18,7 +19,11 @@
     togglePickerSelection,
     moveFile,
     copyFile,
-    saveName
+    saveName,
+    selectSingle,
+    selectToggle,
+    selectRange,
+    selectedEntries
   } from '$lib/store';
   import { get } from 'svelte/store';
   import ContextMenu from './ContextMenu.svelte';
@@ -32,6 +37,7 @@
   let mouseUsedRecently = false;
   let mouseTimeout: ReturnType<typeof setTimeout>;
   let lastKeyboardIndex = -1;
+  let lastClickIndex = 0;
 
   let contextMenuVisible = false;
   let contextMenuX = 0;
@@ -68,11 +74,11 @@
     }, 500);
   }
 
-  function handleClick(index: number, entry: FileEntry) {
+  function handleClick(index: number, entry: FileEntry, e: MouseEvent) {
     mouseUsedRecently = true;
-    selectedIndex.set(index);
     
     if ($isPickerMode) {
+      selectedIndex.set(index);
       const config = get(pickerConfig);
       if (config?.mode === 'Save') {
         if (!entry.is_dir) {
@@ -84,9 +90,20 @@
       if (config?.mode === 'Directories' && !entry.is_dir) return;
       
       togglePickerSelection(entry.path);
-    } else if (!entry.is_dir) {
-      loadPreview(entry.path);
-      viewConfig.update(c => ({ ...c, previewOpen: true }));
+      return;
+    }
+
+    if (e.shiftKey) {
+      selectRange(lastClickIndex, index);
+    } else if (e.ctrlKey || e.metaKey) {
+      selectToggle(index);
+    } else {
+      selectSingle(index);
+      lastClickIndex = index;
+      if (!entry.is_dir) {
+        loadPreview(entry.path);
+        viewConfig.update(c => ({ ...c, previewOpen: true }));
+      }
     }
   }
 
@@ -132,8 +149,12 @@
 
     if (!draggedEntry && (dx * dx + dy * dy) > DRAG_THRESHOLD * DRAG_THRESHOLD) {
       draggedEntry = _mouseDown.entry;
+      const sel = get(selectedEntries);
+      const dragCount = sel.length > 1 && sel.some(e => e.path === draggedEntry!.path) ? sel.length : 1;
       _dragGhost = document.createElement('div');
-      _dragGhost.textContent = `${getFileIcon(draggedEntry)} ${draggedEntry.name}`;
+      _dragGhost.textContent = dragCount > 1
+        ? `${dragCount} items`
+        : `${getFileIcon(draggedEntry)} ${draggedEntry.name}`;
       Object.assign(_dragGhost.style, {
         position: 'fixed', zIndex: '10000', pointerEvents: 'none',
         padding: '4px 12px', borderRadius: '4px',
@@ -172,7 +193,15 @@
   async function handleWindowMouseUp(e: MouseEvent) {
     if (draggedEntry && dropTargetPath) {
       try {
-        await performFileOperation(draggedEntry.path, dropTargetPath, e.ctrlKey);
+        const sel = get(selectedEntries);
+        const isCopy = e.ctrlKey;
+        if (sel.length > 1 && sel.some(s => s.path === draggedEntry!.path)) {
+          for (const entry of sel) {
+            await performFileOperation(entry.path, dropTargetPath!, isCopy);
+          }
+        } else {
+          await performFileOperation(draggedEntry.path, dropTargetPath, isCopy);
+        }
       } finally {
         await refreshDirectory();
       }
@@ -245,15 +274,16 @@
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <div
         class="file-row"
-        class:selected={index === $selectedIndex}
+        class:selected={$selectedIndices.has(index)}
+        class:focused={index === $selectedIndex}
         class:picker-selected={$pickerSelection.has(entry.path)}
         class:directory={entry.is_dir}
         class:hidden-file={entry.hidden}
-        class:dragging={draggedEntry?.path === entry.path}
+        class:dragging={draggedEntry != null && (draggedEntry.path === entry.path || ($selectedIndices.has(index) && $selectedEntries.some(e => e.path === draggedEntry?.path)))}
         style="transform: translateY({top}px)"
         data-drop-path={entry.is_dir ? entry.path : null}
         onmousedown={(e) => handleRowMouseDown(e, entry)}
-        onclick={() => handleClick(index, entry)}
+        onclick={(e) => handleClick(index, entry, e)}
         ondblclick={() => handleDoubleClick(index, entry)}
         oncontextmenu={(e) => handleRightClick(e, index, entry)}
         role="row"
@@ -326,6 +356,9 @@
 
   .file-row.selected {
     background: var(--selection-bg);
+  }
+
+  .file-row.focused {
     border-bottom-color: var(--zinc-border);
     border-top: 1px solid var(--zinc-border);
   }

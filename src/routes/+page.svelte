@@ -29,6 +29,7 @@
     toggleSidebar,
     viewConfig,
     selectedEntry,
+    selectedEntries,
     loadPreview,
     isPickerMode,
     pickerConfig,
@@ -73,15 +74,15 @@
     if (e.ctrlKey && !e.shiftKey && !e.altKey) {
       if (e.key === 'c') {
         e.preventDefault();
-        if ($selectedEntry) {
-          copyToClipboard([$selectedEntry.path]);
+        if ($selectedEntries.length > 0) {
+          copyToClipboard($selectedEntries.map(e => e.path));
         }
         return;
       }
       if (e.key === 'x') {
         e.preventDefault();
-        if ($selectedEntry) {
-          cutToClipboard([$selectedEntry.path]);
+        if ($selectedEntries.length > 0) {
+          cutToClipboard($selectedEntries.map(e => e.path));
         }
         return;
       }
@@ -92,10 +93,13 @@
       }
     }
 
-    if (e.key === 'Delete' && $selectedEntry && !$commandPaletteOpen) {
+    if (e.key === 'Delete' && $selectedEntries.length > 0 && !$commandPaletteOpen) {
       e.preventDefault();
-      if (confirm(`Delete ${$selectedEntry.name}?`)) {
-        deleteFile($selectedEntry.path, $selectedEntry.is_dir);
+      const names = $selectedEntries.map(e => e.name).join(', ');
+      if (confirm(`Delete ${names}?`)) {
+        for (const entry of $selectedEntries) {
+          deleteFile(entry.path, entry.is_dir);
+        }
       }
       return;
     }

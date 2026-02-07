@@ -5,6 +5,8 @@ Fast file manager built with Rust and Svelte. Sub-150ms cold start, native OS in
 ![Tauri v2](https://img.shields.io/badge/Tauri-v2-FFC131?style=flat-square)
 ![Svelte 5](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square)
 
+> ⚠️ **Early stage project** — HardBore is very new and you will run into bugs. If you do, please [open an issue](https://github.com/FrogSnot/HardBore/issues). Bug reports help a lot.
+
 ## Features
 
 - **Native browser integration** - Becomes your system file picker (Linux)
