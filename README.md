@@ -1,6 +1,4 @@
-# HardBore
-
-Fast file manager built with Rust and Svelte. Sub-150ms cold start, native OS integration, full keyboard navigation.
+![HardBore](Media/banner-hero.svg)
 
 ![Tauri v2](https://img.shields.io/badge/Tauri-v2-FFC131?style=flat-square)
 ![Svelte 5](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square)

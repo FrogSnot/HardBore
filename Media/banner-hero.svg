@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A0A0B"/>
+      <stop offset="40%" stop-color="#0f0f10"/>
+      <stop offset="100%" stop-color="#121214"/>
+    </linearGradient>
+    <radialGradient id="orangeGlow" cx="50%" cy="45%" r="45%">
+      <stop offset="0%" stop-color="#FF5722" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="#FF5722" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#FF5722" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="textGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="roundedRect">
+      <rect width="1200" height="400" rx="8" ry="8"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#roundedRect)">
+    <rect width="1200" height="400" fill="url(#bgGrad)"/>
+    <g opacity="0.03" stroke="#FAFAFA" stroke-width="0.5">
+      <line x1="60" y1="0" x2="60" y2="400"/><line x1="120" y1="0" x2="120" y2="400"/>
+      <line x1="180" y1="0" x2="180" y2="400"/><line x1="240" y1="0" x2="240" y2="400"/>
+      <line x1="300" y1="0" x2="300" y2="400"/><line x1="360" y1="0" x2="360" y2="400"/>
+      <line x1="420" y1="0" x2="420" y2="400"/><line x1="480" y1="0" x2="480" y2="400"/>
+      <line x1="540" y1="0" x2="540" y2="400"/><line x1="600" y1="0" x2="600" y2="400"/>
+      <line x1="660" y1="0" x2="660" y2="400"/><line x1="720" y1="0" x2="720" y2="400"/>
+      <line x1="780" y1="0" x2="780" y2="400"/><line x1="840" y1="0" x2="840" y2="400"/>
+      <line x1="900" y1="0" x2="900" y2="400"/><line x1="960" y1="0" x2="960" y2="400"/>
+      <line x1="1020" y1="0" x2="1020" y2="400"/><line x1="1080" y1="0" x2="1080" y2="400"/>
+      <line x1="1140" y1="0" x2="1140" y2="400"/>
+      <line x1="0" y1="60" x2="1200" y2="60"/><line x1="0" y1="120" x2="1200" y2="120"/>
+      <line x1="0" y1="180" x2="1200" y2="180"/><line x1="0" y1="240" x2="1200" y2="240"/>
+      <line x1="0" y1="300" x2="1200" y2="300"/><line x1="0" y1="360" x2="1200" y2="360"/>
+    </g>
+    <ellipse cx="600" cy="170" rx="400" ry="150" fill="url(#orangeGlow)"/>
+    <text x="600" y="90" text-anchor="middle" font-family="'JetBrains Mono','Courier New',monospace" font-size="11" letter-spacing="0.35em" fill="#71717a">TAURI V2 + SVELTE 5 · RUST FILE MANAGER</text>
+    <text x="600" y="210" text-anchor="middle" font-family="'Playfair Display',Georgia,serif" font-size="120" font-weight="800" fill="#e4e4e7" letter-spacing="0.04em">HARD<tspan fill="#FF5722">BORE</tspan></text>
+    <text x="600" y="210" text-anchor="middle" font-family="'Playfair Display',Georgia,serif" font-size="120" font-weight="800" letter-spacing="0.04em" filter="url(#textGlow)" opacity="0.2" fill="transparent"><tspan fill="transparent">HARD</tspan><tspan fill="#FF5722">BORE</tspan></text>
+    <text x="600" y="255" text-anchor="middle" font-family="'JetBrains Mono','Courier New',monospace" font-size="14" fill="#71717a" letter-spacing="0.05em">Fast file manager · Sub-2ms cold start · Native OS integration</text>
+    <line x1="350" y1="280" x2="850" y2="280" stroke="#2a2a2e" stroke-width="1"/>
+    <line x1="530" y1="280" x2="670" y2="280" stroke="#FF5722" stroke-width="2"/>
+    <text x="240" y="325" text-anchor="middle" font-family="'JetBrains Mono','Courier New',monospace" font-size="24" font-weight="700" fill="#e4e4e7">&lt;2ms</text>
+    <text x="240" y="348" text-anchor="middle" font-family="'JetBrains Mono','Courier New',monospace" font-size="9" letter-spacing="0.15em" fill="#71717a">COLD START</text>
+    <circle cx="390" cy="335" r="2" fill="#3a3a3e"/>
+    <text x="510" y="325" text-anchor="middle" font-family="'JetBrains Mono','Courier New',monospace" font-size="24" font-weight="700" fill="#e4e4e7">709K</text>
+    <text x="510" y="348" text-anchor="middle" font-family="'JetBrains Mono','Courier New',monospace" font-size="9" letter-spacing="0.15em" fill="#71717a">ITEMS/SEC</text>
+    <circle cx="630" cy="335" r="2" fill="#3a3a3e"/>
+    <text x="730" y="325" text-anchor="middle" font-family="'JetBrains Mono','Courier New',monospace" font-size="24" font-weight="700" fill="#e4e4e7">~250MB</text>
+    <text x="730" y="348" text-anchor="middle" font-family="'JetBrains Mono','Courier New',monospace" font-size="9" letter-spacing="0.15em" fill="#71717a">RAM USAGE</text>
+    <circle cx="850" cy="335" r="2" fill="#3a3a3e"/>
+    <text x="960" y="325" text-anchor="middle" font-family="'JetBrains Mono','Courier New',monospace" font-size="24" font-weight="700" fill="#FF5722">1.7ms</text>
+    <text x="960" y="348" text-anchor="middle" font-family="'JetBrains Mono','Courier New',monospace" font-size="9" letter-spacing="0.15em" fill="#71717a">FTS5 SEARCH</text>
+    <text x="600" y="385" text-anchor="middle" font-family="'JetBrains Mono','Courier New',monospace" font-size="9" fill="#52525b" font-style="italic">Real-world benchmarks on Arch Linux · AGPL-3.0</text>
+    <path d="M0 0 L30 0 L30 3 L3 3 L3 30 L0 30 Z" fill="#FF5722" opacity="0.6"/>
+    <path d="M1200 0 L1170 0 L1170 3 L1197 3 L1197 30 L1200 30 Z" fill="#FF5722" opacity="0.6"/>
+    <path d="M0 400 L30 400 L30 397 L3 397 L3 370 L0 370 Z" fill="#FF5722" opacity="0.6"/>
+    <path d="M1200 400 L1170 400 L1170 397 L1197 397 L1197 370 L1200 370 Z" fill="#FF5722" opacity="0.6"/>
+    <rect x="0" y="0" width="1200" height="1" fill="#2a2a2e"/>
+    <rect x="0" y="399" width="1200" height="1" fill="#2a2a2e"/>
+  </g>
+</svg>
