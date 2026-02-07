@@ -22,6 +22,7 @@
   export let entry: FileEntry | null = null;
   export let onClose: () => void;
   export let onRefresh: () => void = () => {};
+  export let autoRename = false;
 
   let menuElement: HTMLDivElement;
   let menuX = 0;
@@ -32,6 +33,7 @@
   let propertiesModal = false;
   let properties: FileProperties | null = null;
   let deleteModal = false;
+  let _autoRenameTriggered = false;
 
   interface FileProperties {
     name: string;
@@ -64,6 +66,8 @@
     if (e.key === 'Escape') {
       if (renameMode) {
         renameMode = false;
+        onClose();
+        return;
       } else if (propertiesModal) {
         propertiesModal = false;
       } else if (deleteModal) {
@@ -138,14 +142,15 @@
   }
 
   async function openTerminal() {
-    if (entry) {
-      try {
-        await invoke('open_terminal', { path: entry.path });
-      } catch (e) {
-        console.error('Failed to open terminal:', e);
+    try {
+      const path = entry ? entry.path : get(currentPath);
+      if (path) {
+        await invoke('open_terminal', { path });
       }
-      onClose();
+    } catch (e) {
+      console.error('Failed to open terminal:', e);
     }
+    onClose();
   }
 
   function startRename() {
@@ -272,7 +277,22 @@
     { label: 'Open Terminal Here', icon: 'icon-terminal', action: openTerminal, disabled: false },
     { label: '', icon: '', action: () => {}, separator: true },
     { label: 'Properties', icon: 'icon-info', action: showProperties, disabled: false },
-  ] as MenuItem[] : [];
+  ] as MenuItem[] : [
+    { label: 'Paste', icon: 'icon-paste', action: pasteFiles, disabled: !$clipboard },
+    { label: '', icon: '', action: () => {}, separator: true },
+    { label: 'Open Terminal Here', icon: 'icon-terminal', action: openTerminal, disabled: false },
+    { label: '', icon: '', action: () => {}, separator: true },
+    { label: 'Refresh', icon: 'icon-refresh', action: () => { onRefresh(); onClose(); }, disabled: false },
+  ] as MenuItem[];
+
+  $: if (visible && autoRename && entry && !_autoRenameTriggered) {
+    _autoRenameTriggered = true;
+    startRename();
+  }
+
+  $: if (!visible) {
+    _autoRenameTriggered = false;
+  }
 
   $: if (visible) {
     // CSS zoom on <html> causes the right click menu to be misplaced, so we need to adjust the coordinates based on the zoom level
@@ -305,8 +325,8 @@
   });
 </script>
 
-{#if visible && entry}
-  {#if deleteModal}
+{#if visible}
+  {#if entry && deleteModal}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div class="delete-overlay" onclick={cancelDelete}>
@@ -327,7 +347,7 @@
         </div>
       </div>
     </div>
-  {:else if renameMode}
+  {:else if entry && renameMode}
     <div class="rename-overlay">
       <div class="rename-dialog">
         <div class="rename-header">Rename</div>
@@ -345,7 +365,7 @@
         </div>
       </div>
     </div>
-  {:else if propertiesModal && properties}
+  {:else if entry && propertiesModal && properties}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div class="properties-overlay" onclick={closeProperties}>
@@ -399,10 +419,12 @@
       role="menu"
       aria-label="Context menu"
     >
-      <div class="context-header">
-        <span class="context-icon" class:is-dir={entry.is_dir}></span>
-        <span class="context-title truncate">{entry.name}</span>
-      </div>
+      {#if entry}
+        <div class="context-header">
+          <span class="context-icon" class:is-dir={entry.is_dir}></span>
+          <span class="context-title truncate">{entry.name}</span>
+        </div>
+      {/if}
       
       {#each menuItems as item}
         {#if item.separator}
@@ -539,6 +561,7 @@
   .icon-folder::before { content: '▤'; }
   .icon-terminal::before { content: '›'; }
   .icon-info::before { content: 'i'; font-style: italic; font-weight: bold; }
+  .icon-refresh::before { content: '↻'; }
 
   .menu-label {
     flex: 1;

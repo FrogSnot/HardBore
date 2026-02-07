@@ -23,7 +23,8 @@
     selectSingle,
     selectToggle,
     selectRange,
-    selectedEntries
+    selectedEntries,
+    commandPaletteOpen
   } from '$lib/store';
   import { get } from 'svelte/store';
   import ContextMenu from './ContextMenu.svelte';
@@ -43,6 +44,7 @@
   let contextMenuX = 0;
   let contextMenuY = 0;
   let contextMenuEntry: FileEntry | null = null;
+  let contextMenuAutoRename = false;
 
   let draggedEntry: FileEntry | null = null;
   let dropTargetPath: string | null = null;
@@ -127,6 +129,7 @@
   function closeContextMenu() {
     contextMenuVisible = false;
     contextMenuEntry = null;
+    contextMenuAutoRename = false;
   }
 
   async function refreshDirectory() {
@@ -242,6 +245,38 @@
     }
   }
 
+  function handleContainerRightClick(e: MouseEvent) {
+    if ((e.target as HTMLElement).closest('.file-row')) return;
+    e.preventDefault();
+    contextMenuX = e.clientX;
+    contextMenuY = e.clientY;
+    contextMenuEntry = null;
+    contextMenuAutoRename = false;
+    contextMenuVisible = true;
+  }
+
+  function handleF2(e: KeyboardEvent) {
+    if (e.key !== 'F2') return;
+    if (contextMenuVisible || get(commandPaletteOpen)) return;
+    const idx = get(selectedIndex);
+    const all = get(entries);
+    if (idx < 0 || idx >= all.length) return;
+    e.preventDefault();
+    const entry = all[idx];
+    contextMenuEntry = entry;
+    const row = container?.querySelector('.file-row.focused');
+    if (row) {
+      const rect = row.getBoundingClientRect();
+      contextMenuX = rect.left + 50;
+      contextMenuY = rect.top + rect.height;
+    } else {
+      contextMenuX = 200;
+      contextMenuY = 200;
+    }
+    contextMenuAutoRename = true;
+    contextMenuVisible = true;
+  }
+
   $: if (container && $entries.length > 0 && containerHeight > 0 && !mouseUsedRecently && $selectedIndex !== lastKeyboardIndex) {
     lastKeyboardIndex = $selectedIndex;
     const selectedTop = $selectedIndex * ITEM_HEIGHT;
@@ -261,14 +296,18 @@
       containerHeight = entries[0].contentRect.height;
     });
     resizeObserver.observe(container);
+    window.addEventListener('keydown', handleF2);
     
-    return () => resizeObserver.disconnect();
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('keydown', handleF2);
+    };
   });
 </script>
 
 <svelte:window onmousemove={handleWindowMouseMove} onmouseup={handleWindowMouseUp} />
 
-<div class="file-list-container" bind:this={container} onscroll={handleScroll} onmousemove={handleMouseMove} role="region" aria-label="File list">
+<div class="file-list-container" bind:this={container} onscroll={handleScroll} onmousemove={handleMouseMove} oncontextmenu={handleContainerRightClick} role="region" aria-label="File list">
   <div class="file-list-scroll" style="height: {totalHeight}px">
     {#each visibleItems as { entry, index, top } (entry.path)}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -314,6 +353,7 @@
   x={contextMenuX}
   y={contextMenuY}
   entry={contextMenuEntry}
+  autoRename={contextMenuAutoRename}
   onClose={closeContextMenu}
   onRefresh={refreshDirectory}
 />
