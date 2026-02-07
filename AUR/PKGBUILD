@@ -14,10 +14,8 @@ sha256sums=('SKIP')
 build() {
     cd "$srcdir/HardBore-$pkgver"
     export CARGO_HOME="$srcdir/cargo-home"
-    # Arch's rust defaults to lld which mishandles bundled SQLite static linking
-    export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-fuse-ld=bfd"
     npm install
-    npx tauri build --no-bundle
+    npx tauri build --no-bundle -- --no-default-features
     cd portal
     cargo build --release
 }

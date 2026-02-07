@@ -7,7 +7,9 @@ license = "AGPL-3.0"
 edition = "2021"
 default-run = "hardbore"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["bundled-sqlite"]
+bundled-sqlite = ["rusqlite/bundled"]
 
 [lib]
 name = "hardbore_lib"
@@ -32,7 +34,7 @@ serde_json = "1"
 jwalk = "0.8"
 
 
-rusqlite = { version = "0.33", features = ["bundled"] }
+rusqlite = "0.33"
 
 
 
