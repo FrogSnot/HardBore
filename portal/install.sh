@@ -7,14 +7,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "Building backend..."
-cd "$PROJECT_ROOT/src-tauri"
-cargo build --release --bin portal
+cd "$SCRIPT_DIR"
+cargo build --release
 
-sudo cp "$PROJECT_ROOT/src-tauri/target/release/portal" /usr/local/bin/hardbore-portal
+sudo cp "$SCRIPT_DIR/target/release/portal" /usr/local/bin/hardbore-portal
 sudo chmod +x /usr/local/bin/hardbore-portal
 
 if [ ! -f /usr/local/bin/hardbore ]; then
     echo "Building main binary..."
+    cd "$PROJECT_ROOT/src-tauri"
     cargo build --release
     sudo cp "$PROJECT_ROOT/src-tauri/target/release/hardbore" /usr/local/bin/hardbore
     sudo chmod +x /usr/local/bin/hardbore
