@@ -12,6 +12,7 @@ import type {
   MountPoint,
   PickerConfig
 } from './types';
+import { splitPath, parentDir } from './utils';
 
 export const currentDir = writable<DirectoryContents | null>(null);
 export const history = writable<string[]>([]);
@@ -226,8 +227,8 @@ export async function loadPreview(path: string): Promise<void> {
 }
 
 function calculateProximityScore(resultPath: string, currentPath: string): number {
-  const currentParts = currentPath.split('/').filter(p => p);
-  const resultParts = resultPath.split('/').filter(p => p);
+  const currentParts = splitPath(currentPath);
+  const resultParts = splitPath(resultPath);
   
   const resultDir = resultParts.slice(0, -1).join('/');
   const currentDirPath = currentParts.join('/');
@@ -312,7 +313,7 @@ export async function jumpToSearchResult(): Promise<void> {
     if (result.is_dir) {
       await navigateTo(result.path);
     } else {
-      const parentPath = result.path.substring(0, result.path.lastIndexOf('/'));
+      const parentPath = parentDir(result.path);
       await navigateTo(parentPath);
       
       const items = get(entries);

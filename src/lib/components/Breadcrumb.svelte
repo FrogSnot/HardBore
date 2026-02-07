@@ -1,5 +1,6 @@
 <script lang="ts">
   import { currentPath, parentPath, navigateTo, navigateUp, history, historyIndex, navigateBack, navigateForward, createDirectory } from '$lib/store';
+  import { getPathRoot, getPathSegments, buildPath } from '$lib/utils';
 
   let editMode = false;
   let inputValue = '';
@@ -56,7 +57,8 @@
     }
   }
 
-  $: segments = $currentPath.split('/').filter(Boolean);
+  $: pathRoot = getPathRoot($currentPath);
+  $: segments = getPathSegments($currentPath);
   $: canGoBack = $historyIndex > 0;
   $: canGoForward = $historyIndex < $history.length - 1;
 </script>
@@ -98,12 +100,12 @@
     />
   {:else}
     <div class="path-display mono" onclick={startEdit} role="button" tabindex="0" onkeydown={(e) => e.key === 'Enter' && startEdit()}>
-      <button class="segment root" data-drop-path="/" onclick={(e) => { e.stopPropagation(); navigateTo('/'); }} type="button">/</button>
+      <button class="segment root" data-drop-path={pathRoot} onclick={(e) => { e.stopPropagation(); navigateTo(pathRoot); }} type="button">{pathRoot}</button>
       {#each segments as segment, i}
         <button 
           class="segment"
-          data-drop-path={'/' + segments.slice(0, i + 1).join('/')}
-          onclick={(e) => { e.stopPropagation(); navigateTo('/' + segments.slice(0, i + 1).join('/')); }}
+          data-drop-path={buildPath(pathRoot, segments, i + 1)}
+          onclick={(e) => { e.stopPropagation(); navigateTo(buildPath(pathRoot, segments, i + 1)); }}
           type="button"
         >
           {segment}

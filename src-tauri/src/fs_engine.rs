@@ -115,6 +115,11 @@ fn get_file_entry(path: &Path) -> Option<FileEntry> {
             .map(|e| e.to_string_lossy().to_lowercase())
     };
 
+    #[cfg(unix)]
+    let hidden = name.starts_with('.');
+    #[cfg(windows)]
+    let hidden = metadata.file_attributes() & 0x2 != 0;
+    #[cfg(not(any(unix, windows)))]
     let hidden = name.starts_with('.');
 
     #[cfg(unix)]

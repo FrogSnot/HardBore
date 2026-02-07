@@ -22,7 +22,7 @@ build() {
     npm run build
     cd src-tauri
     cargo build --release
-    cargo build --release --bin portal
+    cargo build --release --features portal --bin portal
 }
 
 package() {

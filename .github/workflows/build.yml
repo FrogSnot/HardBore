@@ -14,6 +14,12 @@ jobs:
         include:
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+          - platform: macos-13
+            target: x86_64-apple-darwin
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
 
     runs-on: ${{ matrix.platform }}
 
@@ -31,6 +37,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Install Linux dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -52,7 +59,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             src-tauri/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install frontend dependencies
         run: npm ci
@@ -61,17 +68,20 @@ jobs:
         run: npm run tauri build -- --target ${{ matrix.target }}
 
       - name: Build portal binary
+        if: runner.os == 'Linux'
         run: |
           cd src-tauri
-          cargo build --release --bin portal --target ${{ matrix.target }}
+          cargo build --release --features portal --bin portal --target ${{ matrix.target }}
 
       - name: Upload .deb
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: hardbore-linux-deb
           path: src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
 
       - name: Upload .AppImage
+        if: runner.os == 'Linux'
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
@@ -80,7 +90,31 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload portal binary
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: hardbore-portal
           path: src-tauri/target/${{ matrix.target }}/release/portal
+
+      - name: Upload .dmg
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardbore-macos-dmg-${{ matrix.target }}
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+
+      - name: Upload .msi
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardbore-windows-msi
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
+
+      - name: Upload NSIS installer
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardbore-windows-nsis
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
+          if-no-files-found: warn

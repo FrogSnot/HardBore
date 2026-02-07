@@ -1,5 +1,6 @@
 <script lang="ts">
   import { navigateTo, favorites, mountPoints, addFavorite, removeFavorite, currentPath, startIndexing } from '$lib/store';
+  import { basename } from '$lib/utils';
   import type { MountPoint } from '$lib/types';
 
   let showContextMenu = false;
@@ -50,8 +51,7 @@
   }
 
   function getDisplayName(path: string): string {
-    const parts = path.split('/').filter(Boolean);
-    return parts[parts.length - 1] || path;
+    return basename(path) || path;
   }
 
   function isFavorite(path: string): boolean {

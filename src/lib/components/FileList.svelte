@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import type { FileEntry } from '$lib/types';
-  import { formatSize, formatDate, getFileIcon } from '$lib/utils';
+  import { formatSize, formatDate, getFileIcon, basename } from '$lib/utils';
   import { 
     selectedIndex, 
     entries, 
@@ -186,11 +186,11 @@
   }
 
   async function performFileOperation(sourcePath: string, targetDir: string, isCopy: boolean) {
-    const fileName = sourcePath.split('/').pop();
+    const fileName = basename(sourcePath);
     if (!fileName) return;
     const destination = `${targetDir}/${fileName}`;
     if (sourcePath === destination) return;
-    if (destination.startsWith(sourcePath + '/')) return;
+    if (destination.startsWith(sourcePath + '/') || destination.startsWith(sourcePath + '\\')) return;
 
     if (isCopy) {
       await copyFile(sourcePath, destination);

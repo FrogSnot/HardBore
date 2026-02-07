@@ -1,6 +1,6 @@
 <script lang="ts">
   import { previewFile, previewLoading, viewConfig, togglePreview } from '$lib/store';
-  import { formatSize, getLanguage } from '$lib/utils';
+  import { formatSize, getLanguage, basename } from '$lib/utils';
   import { convertFileSrc } from '@tauri-apps/api/core';
 
   let imageError = false;
@@ -30,7 +30,7 @@
   <aside class="preview-pane">
     <div class="preview-header">
       <span class="preview-title truncate mono">
-        {preview ? preview.path.split('/').pop() : 'No file selected'}
+        {preview ? basename(preview.path) : 'No file selected'}
       </span>
       <button class="close-btn icon-close" onclick={togglePreview} title="Close preview (p)" type="button" aria-label="Close preview">
       </button>
@@ -83,7 +83,7 @@
               {/if}
               <img 
                 src={assetUrl} 
-                alt={preview.path.split('/').pop()} 
+                alt={basename(preview.path)} 
                 class="preview-img"
                 class:loaded={imageLoaded}
                 onerror={handleImageError}

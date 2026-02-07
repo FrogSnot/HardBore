@@ -13,6 +13,12 @@ jobs:
         include:
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+          - platform: macos-13
+            target: x86_64-apple-darwin
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
 
     runs-on: ${{ matrix.platform }}
 
@@ -30,6 +36,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Install Linux dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -51,7 +58,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             src-tauri/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install frontend dependencies
         run: npm ci
@@ -60,17 +67,20 @@ jobs:
         run: npm run tauri build -- --target ${{ matrix.target }}
 
       - name: Build portal binary
+        if: runner.os == 'Linux'
         run: |
           cd src-tauri
-          cargo build --release --bin portal --target ${{ matrix.target }}
+          cargo build --release --features portal --bin portal --target ${{ matrix.target }}
 
       - name: Upload .deb
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: hardbore-linux-deb
           path: src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
 
       - name: Upload .AppImage
+        if: runner.os == 'Linux'
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
@@ -79,10 +89,34 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload portal binary
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: hardbore-portal
           path: src-tauri/target/${{ matrix.target }}/release/portal
+
+      - name: Upload .dmg
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardbore-macos-dmg-${{ matrix.target }}
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+
+      - name: Upload .msi
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardbore-windows-msi
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
+
+      - name: Upload NSIS installer
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardbore-windows-nsis
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
+          if-no-files-found: warn
 
   release:
     needs: build
@@ -105,6 +139,9 @@ jobs:
             artifacts/**/*.deb
             artifacts/**/*.AppImage
             artifacts/**/portal
+            artifacts/**/*.dmg
+            artifacts/**/*.msi
+            artifacts/**/*.exe
           draft: false
           prerelease: false
         env:
@@ -158,10 +195,10 @@ jobs:
 
       - name: Update PKGBUILD-bin
         run: |
-          cd AUR
+          cd AUR-bin
           VERSION=${{ steps.get_version.outputs.VERSION }}
-          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD-bin
-          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD-bin
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
 
           BASE="https://raw.githubusercontent.com/FrogSnot/HardBore/v${VERSION}"
           RELEASE="https://github.com/FrogSnot/HardBore/releases/download/v${VERSION}"
@@ -173,13 +210,13 @@ jobs:
           SERVICE_SHA=$(curl -sL "${BASE}/portal/org.freedesktop.impl.portal.desktop.hardbore.service" | sha256sum | awk '{print $1}')
           DEB_SHA=$(curl -sL "${RELEASE}/hardbore_${VERSION}_amd64.deb" | sha256sum | awk '{print $1}')
 
-          sed -i "s/^sha256sums=.*/sha256sums=('${LICENSE_SHA}' '${README_SHA}' '${PORTAL_SHA}' '${PORTALCONF_SHA}' '${SERVICE_SHA}' '${DEB_SHA}')/" PKGBUILD-bin
+          sed -i "s/^sha256sums=.*/sha256sums=('${LICENSE_SHA}' '${README_SHA}' '${PORTAL_SHA}' '${PORTALCONF_SHA}' '${SERVICE_SHA}' '${DEB_SHA}')/' PKGBUILD
 
       - name: Publish to AUR (hardbore-bin)
         uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
           pkgname: hardbore-bin
-          pkgbuild: AUR/PKGBUILD-bin
+          pkgbuild: AUR-bin/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}

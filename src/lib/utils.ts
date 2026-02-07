@@ -15,6 +15,44 @@ export function formatSize(bytes: number): string {
   return `${size.toFixed(1)} ${units[unitIndex]}`;
 }
 
+const PATH_SEP_RE = /[\\/]/;
+
+export function splitPath(path: string): string[] {
+  return path.split(PATH_SEP_RE).filter(Boolean);
+}
+
+export function basename(path: string): string {
+  const parts = splitPath(path);
+  return parts[parts.length - 1] || path;
+}
+
+export function getPathRoot(path: string): string {
+  if (path.startsWith('/')) return '/';
+  const match = path.match(/^[A-Za-z]:[\\/]/);
+  return match ? match[0] : '/';
+}
+
+export function getPathSegments(path: string): string[] {
+  const root = getPathRoot(path);
+  const rest = path.substring(root.length);
+  return rest.split(PATH_SEP_RE).filter(Boolean);
+}
+
+export function buildPath(root: string, segments: string[], count: number): string {
+  const joined = segments.slice(0, count).join('/');
+  if (root === '/') return '/' + joined;
+  return root + joined;
+}
+
+export function parentDir(path: string): string {
+  const lastSep = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  if (lastSep < 0) return path;
+  if (lastSep === 0) return '/';
+  const root = getPathRoot(path);
+  if (lastSep < root.length) return root;
+  return path.substring(0, lastSep);
+}
+
 export function formatDate(timestamp: number): string {
   const date = new Date(timestamp * 1000);
   const now = new Date();
@@ -119,7 +157,7 @@ export function getLanguage(extension: string | null): string {
 export function truncatePath(path: string, maxLength: number): string {
   if (path.length <= maxLength) return path;
   
-  const parts = path.split('/');
+  const parts = splitPath(path);
   let result = parts[parts.length - 1];
   
   for (let i = parts.length - 2; i >= 0; i--) {
