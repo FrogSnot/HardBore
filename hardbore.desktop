@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=HardBore
+Comment=High-performance file manager
+GenericName=File Manager
+Exec=hardbore %U
+Icon=hardbore
+Terminal=false
+Type=Application
+Categories=System;FileTools;FileManager;
+MimeType=inode/directory;
+Keywords=file;manager;explorer;files;folders;

@@ -1,0 +1,187 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libfuse2
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        run: npm run tauri build -- --target ${{ matrix.target }}
+
+      - name: Build portal binary
+        run: |
+          cd src-tauri
+          cargo build --release --bin portal --target ${{ matrix.target }}
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardbore-linux-deb
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+
+      - name: Upload .AppImage
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardbore-linux-appimage
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+          if-no-files-found: warn
+
+      - name: Upload portal binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardbore-portal
+          path: src-tauri/target/${{ matrix.target }}/release/portal
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/**/*.deb
+            artifacts/**/*.AppImage
+            artifacts/**/portal
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  aur-publish:
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Update PKGBUILD
+        run: |
+          cd AUR
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+
+          SHA256=$(curl -sL "https://github.com/FrogSnot/HardBore/archive/v${VERSION}.tar.gz" | sha256sum | awk '{print $1}')
+          sed -i "s/^sha256sums=.*/sha256sums=('${SHA256}')/" PKGBUILD
+
+      - name: Publish to AUR (hardbore)
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
+        with:
+          pkgname: hardbore
+          pkgbuild: AUR/PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to version ${{ steps.get_version.outputs.VERSION }}"
+          ssh_keyscan_types: rsa,ecdsa,ed25519
+
+  aur-publish-bin:
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Wait for release assets
+        run: sleep 60
+
+      - name: Update PKGBUILD-bin
+        run: |
+          cd AUR
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD-bin
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD-bin
+
+          BASE="https://raw.githubusercontent.com/FrogSnot/HardBore/v${VERSION}"
+          RELEASE="https://github.com/FrogSnot/HardBore/releases/download/v${VERSION}"
+
+          LICENSE_SHA=$(curl -sL "${BASE}/LICENSE" | sha256sum | awk '{print $1}')
+          README_SHA=$(curl -sL "${BASE}/README.md" | sha256sum | awk '{print $1}')
+          PORTAL_SHA=$(curl -sL "${RELEASE}/portal" | sha256sum | awk '{print $1}')
+          PORTALCONF_SHA=$(curl -sL "${BASE}/portal/hardbore.portal" | sha256sum | awk '{print $1}')
+          SERVICE_SHA=$(curl -sL "${BASE}/portal/org.freedesktop.impl.portal.desktop.hardbore.service" | sha256sum | awk '{print $1}')
+          DEB_SHA=$(curl -sL "${RELEASE}/hardbore_${VERSION}_amd64.deb" | sha256sum | awk '{print $1}')
+
+          sed -i "s/^sha256sums=.*/sha256sums=('${LICENSE_SHA}' '${README_SHA}' '${PORTAL_SHA}' '${PORTALCONF_SHA}' '${SERVICE_SHA}' '${DEB_SHA}')/" PKGBUILD-bin
+
+      - name: Publish to AUR (hardbore-bin)
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
+        with:
+          pkgname: hardbore-bin
+          pkgbuild: AUR/PKGBUILD-bin
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to version ${{ steps.get_version.outputs.VERSION }}"
+          ssh_keyscan_types: rsa,ecdsa,ed25519
