@@ -1,5 +1,8 @@
 ![HardBore](Media/banner-hero.svg)
 
+[![AUR votes](https://img.shields.io/aur/votes/spent?logo=arch-linux&style=flat-square&color=blue)](https://aur.archlinux.org/packages/hardbore)
+[![GitHub stars](https://img.shields.io/github/stars/FrogSnot/Spent?style=flat-square&color=yellow)](https://github.com/FrogSnot/HardBore)
+![Rust](https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white)
 ![Tauri v2](https://img.shields.io/badge/Tauri-v2-FFC131?style=flat-square)
 ![Svelte 5](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square)
 
