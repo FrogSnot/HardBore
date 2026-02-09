@@ -360,8 +360,13 @@ fn open_terminal(path: String) -> Result<(), String> {
                 .map(|o| o.status.success())
                 .unwrap_or(false)
             {
+                let dir_flag = match *term {
+                    "gnome-terminal" => "--working-directory",
+                    "konsole" => "--workdir",
+                    _ => "-d",
+                };
                 Command::new(term)
-                    .arg(if *term == "gnome-terminal" { "--working-directory" } else { "-d" })
+                    .arg(dir_flag)
                     .arg(&folder)
                     .spawn()
                     .ok();
@@ -570,9 +575,11 @@ fn get_picker_config(state: State<AppState>) -> PickerConfig {
 
 #[tauri::command]
 fn select_files(paths: Vec<String>, app_handle: tauri::AppHandle) -> Result<(), String> {
+    use std::io::Write;
     for path in &paths {
         println!("HARDBORE_SELECTED:{}", path);
     }
+    let _ = std::io::stdout().flush();
     
     app_handle.exit(0);
     Ok(())
@@ -580,7 +587,9 @@ fn select_files(paths: Vec<String>, app_handle: tauri::AppHandle) -> Result<(), 
 
 #[tauri::command]
 fn cancel_picker(app_handle: tauri::AppHandle) -> Result<(), String> {
+    use std::io::Write;
     println!("HARDBORE_CANCELLED");
+    let _ = std::io::stdout().flush();
     app_handle.exit(1);
     Ok(())
 }

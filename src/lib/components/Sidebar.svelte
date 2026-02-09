@@ -59,7 +59,7 @@
   }
 </script>
 
-<svelte:window on:click={closeContextMenu} />
+<svelte:window onclick={closeContextMenu} />
 
 <aside class="sidebar">
   <div class="sidebar-section">
@@ -67,7 +67,7 @@
       <span class="section-title">FAVORITES</span>
       <button 
         class="add-favorite-btn" 
-        on:click={handleAddFavorite}
+        onclick={handleAddFavorite}
         title="Add current directory to favorites"
       >+</button>
     </div>
@@ -80,8 +80,8 @@
             class="sidebar-item"
             class:active={$currentPath === fav}
             data-drop-path={fav}
-            on:click={() => handleFavoriteClick(fav)}
-            on:contextmenu={(e) => handleRightClick(e, fav)}
+            onclick={() => handleFavoriteClick(fav)}
+            oncontextmenu={(e) => handleRightClick(e, fav)}
           >
             <span class="item-icon icon-star"></span>
             <span class="item-name">{getDisplayName(fav)}</span>
@@ -104,8 +104,8 @@
             class="sidebar-item"
             class:active={$currentPath === mount.path}
             data-drop-path={mount.path}
-            on:click={() => handleMountClick(mount)}
-            on:contextmenu={(e) => handleRightClick(e, mount.path)}
+            onclick={() => handleMountClick(mount)}
+            oncontextmenu={(e) => handleRightClick(e, mount.path)}
             title={mount.device}
           >
             <span class="item-icon icon-device"></span>
@@ -122,10 +122,10 @@
     class="context-menu" 
     style="left: {contextMenuX}px; top: {contextMenuY}px;"
   >
-    <button class="context-item" on:click={handleIndexDirectory}>
+    <button class="context-item" onclick={handleIndexDirectory}>
       Index Directory
     </button>
-    <button class="context-item" on:click={handleRemoveFavorite}>
+    <button class="context-item" onclick={handleRemoveFavorite}>
       Remove from Favorites
     </button>
   </div>

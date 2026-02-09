@@ -1,8 +1,13 @@
 <script lang="ts">
-  import { pickerConfig, pickerSelection, confirmPickerSelection, cancelPicker, saveName, isSaveMode, currentPath } from '$lib/store';
+  import { pickerConfig, pickerSelection, confirmPickerSelection, cancelPicker, saveName, isSaveMode, currentPath, selectedEntry } from '$lib/store';
 
   $: selectionCount = $pickerSelection.size;
-  $: hasSelection = selectionCount > 0;
+  $: focusedValid = !saveMode && $selectedEntry != null && (
+    $pickerConfig?.mode === 'Both' ||
+    ($pickerConfig?.mode === 'Files' && !$selectedEntry.is_dir) ||
+    ($pickerConfig?.mode === 'Directories' && $selectedEntry.is_dir)
+  );
+  $: hasSelection = selectionCount > 0 || focusedValid;
   $: saveMode = $isSaveMode;
   $: modeText = $pickerConfig?.mode === 'Files' ? 'files' : $pickerConfig?.mode === 'Directories' ? 'directories' : 'items';
   $: multipleAllowed = $pickerConfig?.allow_multiple ?? false;

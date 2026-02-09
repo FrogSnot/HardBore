@@ -180,19 +180,32 @@ impl FileChooserPortal {
     async fn launch_picker(&self, args: &[String]) -> Vec<String> {
         eprintln!("[HardBore Portal] Launching: {} {:?}", &self.hardbore_path, args);
 
-        let output = Command::new(&self.hardbore_path)
+        let child = Command::new(&self.hardbore_path)
             .args(args)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .output()
-            .await;
+            .kill_on_drop(true)
+            .spawn();
 
-        match output {
-            Ok(output) if output.status.success() => {
+        let child = match child {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("[HardBore Portal] Failed to spawn picker: {}", e);
+                return vec![];
+            }
+        };
+
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(600),
+            child.wait_with_output(),
+        )
+        .await;
+
+        match result {
+            Ok(Ok(output)) if output.status.success() => {
                 eprintln!("[HardBore Portal] Picker exited successfully");
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                stdout
+                String::from_utf8_lossy(&output.stdout)
                     .lines()
                     .filter_map(|line| {
                         line.strip_prefix("HARDBORE_SELECTED:")
@@ -200,7 +213,7 @@ impl FileChooserPortal {
                     })
                     .collect()
             }
-            Ok(output) => {
+            Ok(Ok(output)) => {
                 eprintln!(
                     "[HardBore Portal] Picker exited with code {:?}",
                     output.status.code()
@@ -211,8 +224,12 @@ impl FileChooserPortal {
                 );
                 vec![]
             }
-            Err(e) => {
-                eprintln!("[HardBore Portal] Failed to launch picker: {}", e);
+            Ok(Err(e)) => {
+                eprintln!("[HardBore Portal] Picker IO error: {}", e);
+                vec![]
+            }
+            Err(_) => {
+                eprintln!("[HardBore Portal] Picker timed out after 600s");
                 vec![]
             }
         }
@@ -264,10 +281,15 @@ impl FileChooserPortal {
         }
 
         let mut result = HashMap::new();
-        result.insert(
-            "uris".to_string(),
-            Value::new(uris).try_into().unwrap(),
-        );
+        match Value::new(uris).try_into() {
+            Ok(owned) => {
+                result.insert("uris".to_string(), owned);
+            }
+            Err(e) => {
+                eprintln!("[HardBore Portal] Failed to build URI response value: {}", e);
+                return (2, HashMap::new());
+            }
+        }
         (0, result)
     }
 }

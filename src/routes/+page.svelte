@@ -57,9 +57,13 @@
     if ($isPickerMode) {
       if (e.key === 'Enter') {
         e.preventDefault();
-        if ($pickerConfig?.mode === 'Save' && $selectedEntry?.is_dir) {
-          enterSelected();
-        } else if ($pickerConfig?.mode !== 'Save') {
+        if ($pickerConfig?.mode === 'Save') {
+          if ($selectedEntry?.is_dir) {
+            enterSelected();
+          } else {
+            confirmPickerSelection();
+          }
+        } else {
           confirmPickerSelection();
         }
         return;
@@ -141,7 +145,11 @@
       case 'l':
       case 'ArrowRight':
         e.preventDefault();
-        enterSelected();
+        if ($isPickerMode) {
+          if ($selectedEntry?.is_dir) enterSelected();
+        } else {
+          enterSelected();
+        }
         break;
       case 'h':
       case 'ArrowLeft':

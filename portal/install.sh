@@ -15,8 +15,9 @@ sudo chmod +x /usr/local/bin/hardbore-portal
 
 if [ ! -f /usr/local/bin/hardbore ]; then
     echo "Building main binary..."
-    cd "$PROJECT_ROOT/src-tauri"
-    cargo build --release
+    cd "$PROJECT_ROOT"
+    npm install
+    npx tauri build --no-bundle
     sudo cp "$PROJECT_ROOT/src-tauri/target/release/hardbore" /usr/local/bin/hardbore
     sudo chmod +x /usr/local/bin/hardbore
 fi

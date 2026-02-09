@@ -238,20 +238,27 @@ export async function enterSelected(): Promise<void> {
 
 export function selectNext(): void {
   const items = get(entries);
-  selectedIndex.update(i => Math.min(i + 1, items.length - 1));
+  const newIndex = Math.min(get(selectedIndex) + 1, items.length - 1);
+  selectedIndex.set(newIndex);
+  selectedIndices.set(new Set([newIndex]));
 }
 
 export function selectPrevious(): void {
-  selectedIndex.update(i => Math.max(i - 1, 0));
+  const newIndex = Math.max(get(selectedIndex) - 1, 0);
+  selectedIndex.set(newIndex);
+  selectedIndices.set(new Set([newIndex]));
 }
 
 export function selectFirst(): void {
   selectedIndex.set(0);
+  selectedIndices.set(new Set([0]));
 }
 
 export function selectLast(): void {
   const items = get(entries);
-  selectedIndex.set(items.length - 1);
+  const last = Math.max(items.length - 1, 0);
+  selectedIndex.set(last);
+  selectedIndices.set(new Set([last]));
 }
 
 export async function loadPreview(path: string): Promise<void> {
@@ -521,8 +528,25 @@ export async function confirmPickerSelection(): Promise<void> {
       }
       return;
     }
-    const selection = Array.from(get(pickerSelection));
-    await invoke('select_files', { paths: selection });
+    let selection = Array.from(get(pickerSelection));
+    
+    if (selection.length === 0) {
+      const entry = get(selectedEntry);
+      if (entry) {
+        const mode = config?.mode;
+        if (
+          mode === 'Both' ||
+          (mode === 'Files' && !entry.is_dir) ||
+          (mode === 'Directories' && entry.is_dir)
+        ) {
+          selection = [entry.path];
+        }
+      }
+    }
+    
+    if (selection.length > 0) {
+      await invoke('select_files', { paths: selection });
+    }
   } catch (e) {
     errorMessage.set(`Failed to select files: ${e}`);
   }
