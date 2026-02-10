@@ -32,7 +32,7 @@ cp "$SCRIPT_DIR/org.freedesktop.impl.portal.desktop.hardbore.service" \
 
 pkill -f hardbore-portal 2>/dev/null || true
 pkill -f xdg-desktop-portal 2>/dev/null || true
-sleep 1
+sleep 2
 
 systemctl --user restart xdg-desktop-portal 2>/dev/null || true
 

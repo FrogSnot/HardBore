@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::process::Stdio;
-use tokio::process::Command;
 use zbus::{interface, ConnectionBuilder};
 use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
 
@@ -180,58 +179,66 @@ impl FileChooserPortal {
     async fn launch_picker(&self, args: &[String]) -> Vec<String> {
         eprintln!("[HardBore Portal] Launching: {} {:?}", &self.hardbore_path, args);
 
-        let child = Command::new(&self.hardbore_path)
-            .args(args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .kill_on_drop(true)
-            .spawn();
+        let mut env_vars: Vec<(String, String)> = Vec::new();
+        for key in &[
+            "DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR", "HOME",
+            "DBUS_SESSION_BUS_ADDRESS", "GDK_BACKEND", "XDG_SESSION_TYPE",
+            "XDG_CURRENT_DESKTOP", "XDG_DATA_DIRS", "XDG_CONFIG_HOME",
+            "PATH", "LANG", "LC_ALL",
+        ] {
+            if let Ok(val) = std::env::var(key) {
+                env_vars.push((key.to_string(), val));
+            }
+        }
 
-        let child = match child {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("[HardBore Portal] Failed to spawn picker: {}", e);
+        let hardbore_path = self.hardbore_path.clone();
+        let args = args.to_vec();
+
+        let handle = std::thread::spawn(move || {
+            let mut cmd = std::process::Command::new(&hardbore_path);
+            cmd.args(&args)
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
+
+            for (key, val) in &env_vars {
+                cmd.env(key, val);
+            }
+
+            cmd.output()
+        });
+
+        let output = match handle.join() {
+            Ok(Ok(output)) => output,
+            Ok(Err(e)) => {
+                eprintln!("[HardBore Portal] Failed to run picker: {}", e);
+                return vec![];
+            }
+            Err(_) => {
+                eprintln!("[HardBore Portal] Picker thread panicked");
                 return vec![];
             }
         };
 
-        let result = tokio::time::timeout(
-            std::time::Duration::from_secs(600),
-            child.wait_with_output(),
-        )
-        .await;
-
-        match result {
-            Ok(Ok(output)) if output.status.success() => {
-                eprintln!("[HardBore Portal] Picker exited successfully");
-                String::from_utf8_lossy(&output.stdout)
-                    .lines()
-                    .filter_map(|line| {
-                        line.strip_prefix("HARDBORE_SELECTED:")
-                            .map(|s| s.to_string())
-                    })
-                    .collect()
+        if output.status.success() {
+            eprintln!("[HardBore Portal] Picker exited successfully");
+            String::from_utf8_lossy(&output.stdout)
+                .lines()
+                .filter_map(|line| {
+                    line.strip_prefix("HARDBORE_SELECTED:")
+                        .map(|s| s.to_string())
+                })
+                .collect()
+        } else {
+            eprintln!(
+                "[HardBore Portal] Picker exited with code {:?}",
+                output.status.code()
+            );
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if !stderr.is_empty() {
+                eprintln!("[HardBore Portal] stderr: {}", stderr);
             }
-            Ok(Ok(output)) => {
-                eprintln!(
-                    "[HardBore Portal] Picker exited with code {:?}",
-                    output.status.code()
-                );
-                eprintln!(
-                    "[HardBore Portal] stderr: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                );
-                vec![]
-            }
-            Ok(Err(e)) => {
-                eprintln!("[HardBore Portal] Picker IO error: {}", e);
-                vec![]
-            }
-            Err(_) => {
-                eprintln!("[HardBore Portal] Picker timed out after 600s");
-                vec![]
-            }
+            vec![]
         }
     }
 
