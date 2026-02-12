@@ -43,28 +43,76 @@ fn extract_bool(options: &HashMap<String, OwnedValue>, key: &str) -> bool {
 }
 
 fn extract_current_folder(options: &HashMap<String, OwnedValue>) -> Option<String> {
-    let val = options.get("current_folder")?;
-    if let Ok(s) = val.downcast_ref::<String>() {
-        if !s.is_empty() {
-            return Some(s);
-        }
-    }
-    if let Ok(json) = serde_json::to_value(val) {
-        if let Some(arr) = json.as_array() {
-            let bytes: Vec<u8> = arr.iter()
-                .filter_map(|b| b.as_u64().map(|n| n as u8))
-                .collect();
-            let clean = bytes.split(|&b| b == 0).next().unwrap_or(&bytes);
-            if !clean.is_empty() {
-                return String::from_utf8(clean.to_vec()).ok();
-            }
-        }
-        if let Some(s) = json.as_str() {
+    if let Some(val) = options.get("current_folder") {
+
+        if let Ok(s) = val.downcast_ref::<String>() {
             if !s.is_empty() {
                 return Some(s.to_string());
             }
         }
+        
+        if let Ok(s) = val.downcast_ref::<&str>() {
+            if !s.is_empty() {
+                return Some(s.to_string());
+            }
+        }
+        
+        if let Ok(path) = val.downcast_ref::<zbus::zvariant::ObjectPath>() {
+            let s = path.as_str();
+            if !s.is_empty() {
+                return Some(s.to_string());
+            }
+        }
+
+        if let Ok(json) = serde_json::to_value(val) {
+            if let Some(obj) = json.as_object() {
+                if let Some(value) = obj.get("zvariant::Value::Value") {
+                    if let Some(arr) = value.as_array() {
+                        let bytes: Vec<u8> = arr.iter()
+                            .filter_map(|b| b.as_u64().map(|n| n as u8))
+                            .collect();
+                        let clean = bytes.split(|&b| b == 0).next().unwrap_or(&bytes);
+                        if !clean.is_empty() {
+                            if let Ok(path) = String::from_utf8(clean.to_vec()) {
+                                return Some(path);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if let Some(arr) = json.as_array() {
+                let bytes: Vec<u8> = arr.iter()
+                    .filter_map(|b| b.as_u64().map(|n| n as u8))
+                    .collect();
+                let clean = bytes.split(|&b| b == 0).next().unwrap_or(&bytes);
+                if !clean.is_empty() {
+                    if let Ok(path) = String::from_utf8(clean.to_vec()) {
+                        return Some(path);
+                    }
+                }
+            }
+            if let Some(s) = json.as_str() {
+                if !s.is_empty() {
+                    return Some(s.to_string());
+                }
+            }
+        }
     }
+    
+    if let Some(val) = options.get("current_name") {
+        if let Ok(s) = val.downcast_ref::<String>() {
+            if s.contains('/') {
+                if let Some(dir) = std::path::Path::new(s.as_str()).parent() {
+                    let dir_str = dir.to_string_lossy().to_string();
+                    if !dir_str.is_empty() {
+                        return Some(dir_str);
+                    }
+                }
+            }
+        }
+    }
+    
     None
 }
 
@@ -114,13 +162,8 @@ fn parse_filters(options: &HashMap<String, OwnedValue>) -> Vec<FileFilter> {
 
     let json = match serde_json::to_value(val) {
         Ok(j) => j,
-        Err(e) => {
-            eprintln!("[HardBore Portal] Could not serialize filters: {}", e);
-            return vec![];
-        }
+        Err(_) => return vec![],
     };
-
-    eprintln!("[HardBore Portal] Filters as JSON: {}", json);
 
     let Some(filters_arr) = json.as_array() else {
         return vec![];
@@ -177,8 +220,6 @@ impl FileChooserPortal {
     }
 
     async fn launch_picker(&self, args: &[String]) -> Vec<String> {
-        eprintln!("[HardBore Portal] Launching: {} {:?}", &self.hardbore_path, args);
-
         let mut env_vars: Vec<(String, String)> = Vec::new();
         for key in &[
             "DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR", "HOME",
@@ -210,18 +251,11 @@ impl FileChooserPortal {
 
         let output = match handle.join() {
             Ok(Ok(output)) => output,
-            Ok(Err(e)) => {
-                eprintln!("[HardBore Portal] Failed to run picker: {}", e);
-                return vec![];
-            }
-            Err(_) => {
-                eprintln!("[HardBore Portal] Picker thread panicked");
-                return vec![];
-            }
+            Ok(Err(_)) => return vec![],
+            Err(_) => return vec![],
         };
 
         if output.status.success() {
-            eprintln!("[HardBore Portal] Picker exited successfully");
             String::from_utf8_lossy(&output.stdout)
                 .lines()
                 .filter_map(|line| {
@@ -230,14 +264,6 @@ impl FileChooserPortal {
                 })
                 .collect()
         } else {
-            eprintln!(
-                "[HardBore Portal] Picker exited with code {:?}",
-                output.status.code()
-            );
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            if !stderr.is_empty() {
-                eprintln!("[HardBore Portal] stderr: {}", stderr);
-            }
             vec![]
         }
     }
@@ -292,10 +318,7 @@ impl FileChooserPortal {
             Ok(owned) => {
                 result.insert("uris".to_string(), owned);
             }
-            Err(e) => {
-                eprintln!("[HardBore Portal] Failed to build URI response value: {}", e);
-                return (2, HashMap::new());
-            }
+            Err(_) => return (2, HashMap::new()),
         }
         (0, result)
     }
@@ -316,12 +339,16 @@ impl FileChooserPortal {
         _title: &str,
         options: HashMap<String, OwnedValue>,
     ) -> (u32, HashMap<String, OwnedValue>) {
-        eprintln!("[HardBore Portal] OpenFile: app={} title={}", _app_id, _title);
-
         let multiple = extract_bool(&options, "multiple");
         let directory = extract_bool(&options, "directory");
-        let current_folder = extract_current_folder(&options);
+        let mut current_folder = extract_current_folder(&options);
         let filters = parse_filters(&options);
+        
+        if current_folder.is_none() {
+            if let Ok(cwd) = std::env::current_dir() {
+                current_folder = Some(cwd.to_string_lossy().to_string());
+            }
+        }
 
         let mode = if directory { "--picker-dirs" } else { "--picker" };
         let args = Self::build_picker_args(
@@ -345,11 +372,15 @@ impl FileChooserPortal {
         _title: &str,
         options: HashMap<String, OwnedValue>,
     ) -> (u32, HashMap<String, OwnedValue>) {
-        eprintln!("[HardBore Portal] SaveFile: app={} title={}", _app_id, _title);
-
-        let current_folder = extract_current_folder(&options);
+        let mut current_folder = extract_current_folder(&options);
         let current_name = extract_current_name(&options);
         let filters = parse_filters(&options);
+        
+        if current_folder.is_none() {
+            if let Ok(cwd) = std::env::current_dir() {
+                current_folder = Some(cwd.to_string_lossy().to_string());
+            }
+        }
 
         let args = Self::build_picker_args(
             "--picker-save",
@@ -372,10 +403,23 @@ impl FileChooserPortal {
         _title: &str,
         options: HashMap<String, OwnedValue>,
     ) -> (u32, HashMap<String, OwnedValue>) {
-        eprintln!("[HardBore Portal] SaveFiles: app={} title={}", _app_id, _title);
-
-        let current_folder = extract_current_folder(&options);
+        let mut current_folder = extract_current_folder(&options);
         let filenames = extract_filenames(&options);
+        
+        if current_folder.is_none() && !filenames.is_empty() {
+            if let Some(parent) = std::path::Path::new(&filenames[0]).parent() {
+                let parent_str = parent.to_string_lossy().to_string();
+                if !parent_str.is_empty() {
+                    current_folder = Some(parent_str);
+                }
+            }
+        }
+        
+        if current_folder.is_none() {
+            if let Ok(cwd) = std::env::current_dir() {
+                current_folder = Some(cwd.to_string_lossy().to_string());
+            }
+        }
 
         let args = Self::build_picker_args(
             "--picker-dirs",
@@ -406,18 +450,13 @@ impl FileChooserPortal {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    eprintln!("[HardBore Portal] Starting XDG Desktop Portal backend...");
-
     let portal = FileChooserPortal::new();
-    eprintln!("[HardBore Portal] HardBore binary: {}", portal.hardbore_path);
 
     let _connection = ConnectionBuilder::session()?
         .name("org.freedesktop.impl.portal.desktop.hardbore")?
         .serve_at(PORTAL_PATH, portal)?
         .build()
         .await?;
-
-    eprintln!("[HardBore Portal] D-Bus service registered, waiting for requests...");
 
     std::future::pending::<()>().await;
     Ok(())
