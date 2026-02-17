@@ -524,7 +524,12 @@ export async function confirmPickerSelection(): Promise<void> {
       const name = get(saveName).trim();
       const dir = get(currentPath);
       if (name && dir) {
-        await invoke('select_files', { paths: [`${dir}/${name}`] });
+        const fullPath = `${dir}/${name}`;
+        const exists = await invoke<boolean>('path_exists', { path: fullPath });
+        if (exists && !confirm(`"${name}" already exists. Overwrite?`)) {
+          return;
+        }
+        await invoke('select_files', { paths: [fullPath] });
       }
       return;
     }

@@ -569,6 +569,11 @@ fn get_favorites(app_handle: tauri::AppHandle) -> Vec<String> {
 }
 
 #[tauri::command]
+fn path_exists(path: String) -> bool {
+    Path::new(&path).exists()
+}
+
+#[tauri::command]
 fn get_picker_config(state: State<AppState>) -> PickerConfig {
     state.picker_config.lock().unwrap().clone()
 }
@@ -727,6 +732,7 @@ pub fn run() {
             add_favorite,
             remove_favorite,
             get_favorites,
+            path_exists,
             get_picker_config,
             select_files,
             cancel_picker,
