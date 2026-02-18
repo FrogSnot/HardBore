@@ -1,6 +1,6 @@
 {
   "name": "hardbore",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "High-performance file manager - Speed as a Luxury",
   "type": "module",
   "scripts": {

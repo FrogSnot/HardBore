@@ -153,6 +153,18 @@
     onClose();
   }
 
+  async function duplicateItem() {
+    if (entry) {
+      try {
+        await invoke('duplicate_path', { path: entry.path });
+        onRefresh();
+      } catch (e) {
+        alert(`Failed to duplicate: ${e}`);
+      }
+      onClose();
+    }
+  }
+
   function startRename() {
     if (entry) {
       renameValue = entry.name;
@@ -270,6 +282,7 @@
     { label: 'Copy Path', icon: 'icon-copy', action: copyPath, disabled: false },
     { label: 'Copy Name', icon: 'icon-copy', action: copyName, disabled: false },
     { label: '', icon: '', action: () => {}, separator: true },
+    { label: 'Duplicate', icon: 'icon-copy', action: duplicateItem, disabled: false },
     { label: 'Rename', icon: 'icon-edit', action: startRename, disabled: false },
     { label: 'Delete', icon: 'icon-trash', action: deleteItem, disabled: false, danger: true },
     { label: '', icon: '', action: () => {}, separator: true },

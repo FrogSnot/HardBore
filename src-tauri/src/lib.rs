@@ -600,6 +600,36 @@ fn cancel_picker(app_handle: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn duplicate_path(path: String) -> Result<String, String> {
+    let src = Path::new(&path);
+    if !src.exists() {
+        return Err("Source does not exist".to_string());
+    }
+
+    let parent = src.parent().ok_or("Cannot get parent directory")?;
+    let stem = src.file_stem().unwrap_or_default().to_string_lossy();
+    let ext = src.extension().map(|e| format!(".{}", e.to_string_lossy())).unwrap_or_default();
+    let is_dir = src.is_dir();
+
+    let mut dest = parent.join(format!("{stem} (copy){ext}"));
+    let mut counter = 2u32;
+    while dest.exists() {
+        dest = parent.join(format!("{stem} (copy {counter}){ext}"));
+        counter += 1;
+    }
+
+    let dest_str = dest.to_string_lossy().to_string();
+    if is_dir {
+        copy_dir_recursive(src, &dest)?;
+    } else {
+        std::fs::copy(src, &dest)
+            .map_err(|e| format!("Failed to duplicate file: {e}"))?;
+    }
+
+    Ok(dest_str)
+}
+
+#[tauri::command]
 fn get_properties(path: String) -> Result<FileProperties, String> {
     let metadata = std::fs::metadata(&path)
         .map_err(|e| format!("Failed to get metadata: {}", e))?;
@@ -723,6 +753,7 @@ pub fn run() {
             batch_copy_paths,
             batch_move_paths,
             rename_path,
+            duplicate_path,
             open_path,
             show_in_folder,
             open_terminal,
