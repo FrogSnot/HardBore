@@ -399,10 +399,12 @@ export function setSort(field: SortField): void {
 
 export async function initializeApp(): Promise<void> {
   try {
-    await invoke('init_indexer');
-    await loadPickerConfig();
-    await loadFavorites();
-    await loadMountPoints();
+    const [indexedCount] = await Promise.all([
+      invoke<number>('init_indexer'),
+      loadPickerConfig(),
+      loadFavorites(),
+      loadMountPoints(),
+    ]);
     
     const config = get(pickerConfig);
     if (config?.current_name) {
@@ -414,17 +416,16 @@ export async function initializeApp(): Promise<void> {
     
     if (startPath) {
       await navigateTo(startPath);
-      
-      const indexedCount = await invoke<number>('get_indexed_count');
-      if (indexedCount === 0) {
+    }
+
+    if (indexedCount === 0) {
+      setTimeout(() => {
         invoke('start_indexing', { path: '/', maxDepth: null });
-        
         const mounts = get(mountPoints);
-        
         for (const mount of mounts) {
           invoke('start_indexing', { path: mount.path, maxDepth: null });
         }
-      }
+      }, 500);
     }
   } catch (e) {
     errorMessage.set(String(e));

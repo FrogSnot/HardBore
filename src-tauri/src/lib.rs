@@ -33,7 +33,7 @@ struct AppState {
 }
 
 #[tauri::command]
-fn init_indexer(app_handle: tauri::AppHandle, state: State<AppState>) -> Result<(), String> {
+fn init_indexer(app_handle: tauri::AppHandle, state: State<AppState>) -> Result<usize, String> {
     let data_dir = app_handle
         .path()
         .app_data_dir()
@@ -45,10 +45,12 @@ fn init_indexer(app_handle: tauri::AppHandle, state: State<AppState>) -> Result<
     let indexer = Indexer::new(&data_dir.to_string_lossy())
         .map_err(|e| format!("Failed to initialize indexer: {}", e))?;
 
+    let count = indexer.get_indexed_count();
+
     let mut state_indexer = state.indexer.lock().unwrap();
     *state_indexer = Some(indexer);
 
-    Ok(())
+    Ok(count)
 }
 
 #[tauri::command]

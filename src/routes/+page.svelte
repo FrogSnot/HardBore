@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { writable } from 'svelte/store';
+  import { getCurrentWindow } from '@tauri-apps/api/window';
   import '../app.css';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import FileList from '$lib/components/FileList.svelte';
@@ -189,6 +190,7 @@
 
   onMount(async () => {
     await initializeApp();
+    await getCurrentWindow().show();
     
     statusInterval = setInterval(updateIndexerStatus, 2000);
   });
