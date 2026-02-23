@@ -55,6 +55,9 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+
     if ($isPickerMode) {
       if (e.key === 'Enter') {
         e.preventDefault();
