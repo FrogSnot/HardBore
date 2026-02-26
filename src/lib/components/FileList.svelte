@@ -119,7 +119,14 @@
     e.preventDefault();
     e.stopPropagation();
     mouseUsedRecently = true;
-    selectedIndex.set(index);
+
+    const currentSelection = get(selectedIndices);
+    if (!currentSelection.has(index)) {
+      selectSingle(index);
+    } else {
+      selectedIndex.set(index);
+    }
+
     contextMenuX = e.clientX;
     contextMenuY = e.clientY;
     contextMenuEntry = entry;
@@ -353,6 +360,7 @@
   x={contextMenuX}
   y={contextMenuY}
   entry={contextMenuEntry}
+  selectedEntries={$selectedEntries}
   autoRename={contextMenuAutoRename}
   onClose={closeContextMenu}
   onRefresh={refreshDirectory}

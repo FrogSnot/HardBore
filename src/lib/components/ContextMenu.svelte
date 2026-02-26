@@ -20,9 +20,13 @@
   export let y = 0;
   export let visible = false;
   export let entry: FileEntry | null = null;
+  export let selectedEntries: FileEntry[] = [];
   export let onClose: () => void;
   export let onRefresh: () => void = () => {};
   export let autoRename = false;
+
+  $: isMulti = entry !== null && selectedEntries.length > 1 && selectedEntries.some(e => e.path === entry!.path);
+  $: effectiveEntries = isMulti ? selectedEntries : (entry ? [entry] : []);
 
   let menuElement: HTMLDivElement;
   let menuX = 0;
@@ -434,8 +438,13 @@
     >
       {#if entry}
         <div class="context-header">
-          <span class="context-icon" class:is-dir={entry.is_dir}></span>
-          <span class="context-title truncate">{entry.name}</span>
+          {#if isMulti}
+            <span class="context-icon"></span>
+            <span class="context-title truncate">{effectiveEntries.length} items selected</span>
+          {:else}
+            <span class="context-icon" class:is-dir={entry.is_dir}></span>
+            <span class="context-title truncate">{entry.name}</span>
+          {/if}
         </div>
       {/if}
       
