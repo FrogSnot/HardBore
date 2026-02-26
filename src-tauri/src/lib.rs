@@ -649,6 +649,25 @@ fn duplicate_path(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
+fn batch_duplicate_paths(paths: Vec<String>) -> Result<Vec<String>, String> {
+    let mut results = Vec::new();
+    let mut errors = Vec::new();
+
+    for path in paths {
+        match duplicate_path(path.clone()) {
+            Ok(new_path) => results.push(new_path),
+            Err(e) => errors.push(format!("{}: {}", path, e)),
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(results)
+    } else {
+        Err(errors.join("\n"))
+    }
+}
+
+#[tauri::command]
 fn get_properties(path: String) -> Result<FileProperties, String> {
     let metadata = std::fs::metadata(&path)
         .map_err(|e| format!("Failed to get metadata: {}", e))?;
@@ -772,6 +791,7 @@ pub fn run() {
             batch_copy_paths,
             batch_move_paths,
             batch_delete_paths,
+            batch_duplicate_paths,
             rename_path,
             duplicate_path,
             open_path,

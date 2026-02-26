@@ -84,15 +84,15 @@
   }
 
   function copyPath() {
-    if (entry) {
-      navigator.clipboard.writeText(entry.path);
+    if (effectiveEntries.length > 0) {
+      navigator.clipboard.writeText(effectiveEntries.map(e => e.path).join('\n'));
       onClose();
     }
   }
 
   function copyName() {
-    if (entry) {
-      navigator.clipboard.writeText(entry.name);
+    if (effectiveEntries.length > 0) {
+      navigator.clipboard.writeText(effectiveEntries.map(e => e.name).join('\n'));
       onClose();
     }
   }
@@ -159,15 +159,18 @@
   }
 
   async function duplicateItem() {
-    if (entry) {
-      try {
-        await invoke('duplicate_path', { path: entry.path });
-        onRefresh();
-      } catch (e) {
-        alert(`Failed to duplicate: ${e}`);
+    if (effectiveEntries.length === 0) return;
+    try {
+      if (effectiveEntries.length === 1) {
+        await invoke('duplicate_path', { path: effectiveEntries[0].path });
+      } else {
+        await invoke('batch_duplicate_paths', { paths: effectiveEntries.map(e => e.path) });
       }
-      onClose();
+      onRefresh();
+    } catch (e) {
+      alert(`Failed to duplicate: ${e}`);
     }
+    onClose();
   }
 
   function startRename() {
@@ -291,13 +294,13 @@
     { label: 'Copy Name', icon: 'icon-copy', action: copyName, disabled: false },
     { label: '', icon: '', action: () => {}, separator: true },
     { label: 'Duplicate', icon: 'icon-copy', action: duplicateItem, disabled: false },
-    { label: 'Rename', icon: 'icon-edit', action: startRename, disabled: false },
+    { label: 'Rename', icon: 'icon-edit', action: startRename, disabled: isMulti },
     { label: 'Delete', icon: 'icon-trash', action: deleteItem, disabled: false, danger: true },
     { label: '', icon: '', action: () => {}, separator: true },
-    { label: 'Show in Folder', icon: 'icon-folder', action: showInFolder, disabled: false },
+    { label: 'Show in Folder', icon: 'icon-folder', action: showInFolder, disabled: isMulti },
     { label: 'Open Terminal Here', icon: 'icon-terminal', action: openTerminal, disabled: false },
     { label: '', icon: '', action: () => {}, separator: true },
-    { label: 'Properties', icon: 'icon-info', action: showProperties, disabled: false },
+    { label: 'Properties', icon: 'icon-info', action: showProperties, disabled: isMulti },
   ] as MenuItem[] : [
     { label: 'Paste', icon: 'icon-paste', action: pasteFiles, disabled: !$clipboard },
     { label: '', icon: '', action: () => {}, separator: true },
