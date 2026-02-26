@@ -268,6 +268,23 @@ fn batch_move_paths(sources: Vec<String>, destination_dir: String) -> Result<Vec
 }
 
 #[tauri::command]
+fn batch_delete_paths(items: Vec<(String, bool)>) -> Result<(), String> {
+    let mut errors = Vec::new();
+
+    for (path, is_dir) in items {
+        if let Err(e) = delete_path(path.clone(), is_dir) {
+            errors.push(format!("{}: {}", path, e));
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors.join("\n"))
+    }
+}
+
+#[tauri::command]
 fn rename_path(old_path: String, new_name: String) -> Result<String, String> {
     let path = Path::new(&old_path);
     let parent = path.parent()
@@ -754,6 +771,7 @@ pub fn run() {
             move_path,
             batch_copy_paths,
             batch_move_paths,
+            batch_delete_paths,
             rename_path,
             duplicate_path,
             open_path,

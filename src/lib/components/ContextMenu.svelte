@@ -11,6 +11,7 @@
     cutToClipboard,
     pasteFromClipboard,
     deleteFile,
+    deleteFiles,
     renameFile,
     clipboard
   } from '$lib/store';
@@ -97,15 +98,15 @@
   }
 
   function copyFilesToClipboard() {
-    if (entry) {
-      copyToClipboard([entry.path]);
+    if (effectiveEntries.length > 0) {
+      copyToClipboard(effectiveEntries.map(e => e.path));
       onClose();
     }
   }
 
   function cutFilesToClipboard() {
-    if (entry) {
-      cutToClipboard([entry.path]);
+    if (effectiveEntries.length > 0) {
+      cutToClipboard(effectiveEntries.map(e => e.path));
       onClose();
     }
   }
@@ -212,21 +213,24 @@
   }
 
   async function deleteItem() {
-    if (entry) {
+    if (effectiveEntries.length > 0) {
       deleteModal = true;
     }
   }
 
   async function confirmDelete() {
-    if (entry) {
-      try {
-        await deleteFile(entry.path, entry.is_dir);
-        deleteModal = false;
-        onRefresh();
-        onClose();
-      } catch (e) {
-        alert(`Failed to delete: ${e}`);
+    if (effectiveEntries.length === 0) return;
+    try {
+      if (effectiveEntries.length === 1) {
+        await deleteFile(effectiveEntries[0].path, effectiveEntries[0].is_dir);
+      } else {
+        await deleteFiles(effectiveEntries.map(e => ({ path: e.path, is_dir: e.is_dir })));
       }
+      deleteModal = false;
+      onRefresh();
+      onClose();
+    } catch (e) {
+      alert(`Failed to delete: ${e}`);
     }
   }
 
@@ -352,10 +356,21 @@
       <div class="delete-dialog" onclick={(e) => e.stopPropagation()}>
         <div class="delete-header">
           <span class="delete-icon icon-trash"></span>
-          <span class="delete-title">Delete {entry.is_dir ? 'Directory' : 'File'}</span>
+          <span class="delete-title">Delete {isMulti ? `${effectiveEntries.length} Items` : (entry.is_dir ? 'Directory' : 'File')}</span>
         </div>
         <div class="delete-content">
-          <div class="delete-item-name mono">{entry.name}</div>
+          {#if isMulti}
+            <div class="delete-item-list">
+              {#each effectiveEntries.slice(0, 8) as item}
+                <div class="delete-item-name mono">{item.name}</div>
+              {/each}
+              {#if effectiveEntries.length > 8}
+                <div class="delete-item-more text-dim">and {effectiveEntries.length - 8} more...</div>
+              {/if}
+            </div>
+          {:else}
+            <div class="delete-item-name mono">{entry.name}</div>
+          {/if}
           <div class="delete-warning">This action cannot be undone.</div>
         </div>
         <div class="delete-actions">
@@ -851,6 +866,24 @@
     padding: var(--spacing-sm);
     background: var(--basalt-deep);
     border-left: 2px solid var(--safety-orange);
+  }
+
+  .delete-item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .delete-item-list .delete-item-name {
+    font-size: 12px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .delete-item-more {
+    font-size: 12px;
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
 
   .delete-warning {

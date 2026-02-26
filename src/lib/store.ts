@@ -587,6 +587,19 @@ export async function deleteFile(path: string, isDir: boolean): Promise<void> {
   }
 }
 
+export async function deleteFiles(items: Array<{ path: string; is_dir: boolean }>): Promise<void> {
+  try {
+    await invoke('batch_delete_paths', { items: items.map(i => [i.path, i.is_dir]) });
+    const currentDirPath = get(currentPath);
+    if (currentDirPath) {
+      await navigateTo(currentDirPath, false);
+    }
+  } catch (e) {
+    errorMessage.set(`Failed to delete: ${e}`);
+    throw e;
+  }
+}
+
 export async function renameFile(oldPath: string, newName: string): Promise<void> {
   try {
     await invoke('rename_path', { oldPath, newName });
